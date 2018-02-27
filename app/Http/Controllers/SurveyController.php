@@ -524,12 +524,13 @@ class SurveyController extends Controller
                     ->onQueue('emails');
                 $this->dispatch($job);
                 $isSuccess = true;
-                $redis = LRedis::connection();
-                $redis->publish('invite', json_encode([
-                    'success' => $isSuccess,
-                    'emails' => replaceEmail($data['emails']),
-                    'viewInvite' => view('user.component.invited-user', compact('survey'))->render(),
-                ]));
+                // TODO:
+                // $redis = LRedis::connection();
+                // $redis->publish('invite', json_encode([
+                //     'success' => $isSuccess,
+                //     'emails' => replaceEmail($data['emails']),
+                //     'viewInvite' => view('user.component.invited-user', compact('survey'))->render(),
+                // ]));
             }
         }
 

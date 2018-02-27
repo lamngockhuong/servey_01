@@ -192,14 +192,15 @@ class ResultController extends Controller
         $listUserAnswer = $this->surveyRepository->getUserAnswer($token);
         $status = $getCharts['status'];
         $charts = $getCharts['charts'];
-        $redis = LRedis::connection();
-        $redis->publish('answer', json_encode([
-            'success' => true,
-            'surveyId' => $survey->id,
-            'viewChart' => view('user.result.chart', compact('status', 'charts'))->render(),
-            'viewDetailResult' => view('user.result.detail-result', compact('survey'))->render(),
-            'viewUserAnswer' => view('user.result.users-answer', compact('listUserAnswer', 'survey'))->render(),
-        ]));
+        // TODO:
+        // $redis = LRedis::connection();
+        // $redis->publish('answer', json_encode([
+        //     'success' => true,
+        //     'surveyId' => $survey->id,
+        //     'viewChart' => view('user.result.chart', compact('status', 'charts'))->render(),
+        //     'viewDetailResult' => view('user.result.detail-result', compact('survey'))->render(),
+        //     'viewUserAnswer' => view('user.result.users-answer', compact('listUserAnswer', 'survey'))->render(),
+        // ]));
 
         return redirect()->action('ResultController@show', [
             'name' => auth()->check() ? auth()->user()->name : null,

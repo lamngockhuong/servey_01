@@ -138,4 +138,11 @@ class InviteRepository extends BaseRepository implements InviteInterface
             return false;
         }
     }
+
+    public function getInvitesBySurvey($surveyId, $columns = ['*'])
+    {
+        return $this->where('survey_id', '=', $surveyId)
+            ->pluck($columns)
+            ->all();
+    }
 }

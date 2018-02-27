@@ -77,7 +77,8 @@ class AnswerController extends Controller
                         'access',
                         'history',
                         'listUserAnswer',
-                        'tempAnswers'
+                        'tempAnswers',
+                        'token'
                     )
                 );
             }
@@ -128,6 +129,44 @@ class AnswerController extends Controller
         return [
             'success' => true,
             'data' => view('user.pages.view-result-user', compact('history', 'survey', 'username'))->render(),
+        ];
+    }
+
+    public function userAnswerResults(Request $request, $token, $type)
+    {
+        if (!$request->ajax()) {
+            return ['success' => false];
+        }
+
+        $survey = $this->surveyRepository->with('settings')
+            ->where('token_manage', $token)
+            ->first();
+        $settings = $survey->settings->pluck('value', 'key')->all();
+
+        if (!$survey || ($survey->user_id && auth()->check() && $survey->user_id != auth()->id())) {
+            return ['success' => false];
+        }
+
+        if ($settings[config('settings.key.requireAnswer')] == config('settings.require.loginWsm') && (!auth()->user() || !auth()->user()->checkLoginWsm())) {
+            return ['success' => false];
+        }
+
+        if ($survey->user_id && !auth()->check()) {
+            return ['success' => false];
+        }
+
+        if ($survey->user_id && $survey->user_id != auth()->id()) {
+            return ['success' => false];
+        }
+
+        $listUserAnswer = $this->surveyRepository->getUserAnswerByType($token, $type);
+
+        $data = view('user.result.users-answer', compact('listUserAnswer', 'survey'))->render();
+
+        return [
+            'success' => true,
+            'survey_id' => $survey->id,
+            'data' => $data,
         ];
     }
 }

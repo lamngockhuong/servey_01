@@ -367,6 +367,82 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         return array_merge($userLogin, $userNotLogin);
     }
 
+    public function getUserAnswerByType($token, $type)
+    {
+        $survey = $this->where('token', $token)->orWhere('token_manage', $token)->first();
+
+        if (!$survey) {
+            return false;
+        }
+
+        switch ($type) {
+            case config('settings.survey_result_users.all'):
+                return $this->getUserAnswer($token);
+            case config('settings.survey_result_users.invited'):
+                $results = $this->questionRepository
+                    ->getResultFollowInvitedUserByQuestionIds($survey->id)
+                    ->with('sender');
+                $results = $results->distinct('created_at')->get([
+                    'created_at',
+                    'name',
+                    'email',
+                    'sender_id',
+                ])->all();
+
+                if (!$results) {
+                    return [];
+                }
+
+                // TODO:
+
+                $collection = collect($results)->groupBy('sender_id')->toArray();
+
+                return $$collection;
+            case config('settings.survey_result_users.invited_answered'):
+                $results = $this->questionRepository
+                    ->getResultByQuestionIds($survey->id)
+                    ->with('sender');
+                $results = $results->distinct('created_at')->get([
+                    'created_at',
+                    'name',
+                    'email',
+                    'sender_id',
+                ])
+                ->toArray();
+
+                if (!$results) {
+                    return [];
+                }
+
+                $collection = collect($results)->groupBy('sender_id')->toArray();
+                //  Get users login when anwser survey with key = user id.
+                $userLogin = collect($collection)->except([''])->toArray();
+
+                return $userLogin;
+            case config('settings.survey_result_users.invited_not_answered'):
+                $results = $this->questionRepository
+                    ->getResultByQuestionIds($survey->id)
+                    ->with('sender');
+                $results = $results->distinct('created_at')->get([
+                    'created_at',
+                    'name',
+                    'email',
+                    'sender_id',
+                ])
+                ->toArray();
+
+                if (!$results) {
+                    return [];
+                }
+
+                $collection = collect($results)->groupBy('sender_id')->toArray();
+                //  Get users login when anwser survey with key = user id.
+                $userLogin = collect($collection)->except([''])->toArray();
+
+                return $userLogin;
+        }
+    }
+
     private function chart(array $inputs)
     {
         $results = [];

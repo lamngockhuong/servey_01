@@ -121,6 +121,8 @@ Route::group(['prefix' => '/home'], function () {
 
 Route::get('/detail/{token}', 'AnswerController@show');
 
+Route::get('/user-answer-results/{token}/{type}', 'AnswerController@userAnswerResults')->name('user-answer-results');
+
 Route::post('/add-temp/{type}', 'TempController@addTemp');
 
 Route::post('/create', [

@@ -10,7 +10,28 @@ $(function() {
         $('body,html')['animate']({
             scrollTop: 0
         }, 500)
-    })
+    });
+
+    $('.survey-result a').on('click', function () {
+        $('.loader').show();
+        var url = $(this).data('url');
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            async: false,
+            success: function (response) {
+                if (response.success) {
+                    var surveyId = response.survey_id;
+                    $('.tab-users-answer' + surveyId + ' .table').html(response.data);
+                } else {
+                    alert(error);
+                }
+                $('.loader').fadeOut('slow');
+            },
+        });
+    });
 });
 if (window['innerWidth'] < 770) {
     $('button.forward, button.backword')['click'](function() {

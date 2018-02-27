@@ -6,6 +6,7 @@ use App\Models\Answer;
 use App\Models\Result;
 use App\Repositories\BaseRepository;
 use App\Repositories\Result\ResultInterface;
+use App\Repositories\Invite\InviteInterface;
 use Illuminate\Support\Collection;
 use DB;
 use Exception;
@@ -14,11 +15,16 @@ use Carbon\Carbon;
 class AnswerRepository extends BaseRepository implements AnswerInterface
 {
     protected $resultRepository;
+    protected $inviteRepository;
 
-    public function __construct(Answer $answer, ResultInterface $result)
-    {
+    public function __construct(
+        Answer $answer,
+        ResultInterface $result,
+        InviteInterface $invite
+    ) {
         parent::__construct($answer);
         $this->resultRepository = $result;
+        $this->inviteRepository = $invite;
     }
 
     public function deleteByQuestionId($questionIds)
@@ -75,6 +81,24 @@ class AnswerRepository extends BaseRepository implements AnswerInterface
 
         return $this->resultRepository
             ->whereIn('answer_id', $answerIds)
+            ->where('created_at', 'LIKE', "%$time%");
+    }
+
+    public function getResultFollowInvitedUserByAnswer($surveyId, $questionIds, $time = null, $isUpdate = false)
+    {
+        $answerIds = $this->getAnswerIds($questionIds, $isUpdate);
+
+        if (!$time) {
+            return $this->resultRepository->whereIn('answer_id', $answerIds);
+        }
+
+        $invitedUsers = $this->inviteRepository->getInvitesBySurvey($surveyId, 'recevier_id');
+
+        $time = Carbon::parse($time)->format('Y-m-d');
+
+        return $this->resultRepository
+            ->whereIn('answer_id', $answerIds)
+            ->whereIn('sender_id', $invitedUsers)
             ->where('created_at', 'LIKE', "%$time%");
     }
 

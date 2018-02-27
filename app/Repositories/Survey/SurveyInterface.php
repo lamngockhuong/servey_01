@@ -29,5 +29,7 @@ interface SurveyInterface
 
     public function getUserAnswer($token);
 
+    public function getUserAnswerByType($token, $type);
+
     public function exportExcel($id);
 }

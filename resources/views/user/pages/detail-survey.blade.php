@@ -116,7 +116,19 @@
                                                         @include('user.result.detail-result')
                                                     </div>
                                                     <div class="tab-users-answer{{ $survey->id }} tab-pane" id="messages-v">
-                                                        @include('user.result.users-answer')
+                                                        <div class="pull-right survey-result">
+                                                            <a href="javascript:void(0)"
+                                                                data-url="{{ route('user-answer-results', ['token' => $token, 'type' => 1]) }}">Tất cả</a> |
+                                                            <a href="javascript:void(0)"
+                                                                data-url="{{ route('user-answer-results', ['token' => $token, 'type' => 2]) }}">Được mời</a> |
+                                                            <a href="javascript:void(0)"
+                                                                data-url="{{ route('user-answer-results', ['token' => $token, 'type' => 3]) }}">Được mời đã trả lời</a> |
+                                                            <a href="javascript:void(0)"
+                                                                data-url="{{ route('user-answer-results', ['token' => $token, 'type' => 4]) }}">Được mời chưa trả lời</a>
+                                                        </div>
+                                                        <div class="table">
+                                                            @include('user.result.users-answer')
+                                                        </div>
                                                     </div>
                                                     <div class="tab-pane" id="settings-v">
                                                         <div class="excel row">

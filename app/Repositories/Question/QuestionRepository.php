@@ -160,6 +160,18 @@ class QuestionRepository extends BaseRepository implements QuestionInterface
         return $this->answerRepository->getResultByAnswer($questionIds, $time);
     }
 
+    // TODO:
+    public function getResultFollowInvitedUserByQuestionIds($surveyId, $time = null)
+    {
+        $questionIds = $this->getQuestionIds($surveyId);
+
+        if (!$time) {
+            return $this->answerRepository->getResultFollowInvitedUserByAnswer($surveyId, $questionIds, null, true);
+        }
+
+        return $this->answerRepository->getResultFollowInvitedUserByAnswer($surveyId, $questionIds, $time);
+    }
+
     private function createOrUpdateQuestion(array $data)
     {
         $checkboxRequired = $data['checkboxRequired'];

@@ -11,4 +11,6 @@ interface InviteInterface
     public function invite($senderId, array $recevier, $surveyId);
 
     public function getResult($surveyId);
+
+    public function getInvitesBySurvey($surveyId, $columns = ['*']);
 }

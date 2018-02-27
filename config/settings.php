@@ -86,4 +86,10 @@ return [
     'title_length_default' => 20,
     'max_limit' => 10,
     'isPrivate' => 1,
+    'survey_result_users' => [
+        'all' => 1,
+        'invited' => 2,
+        'invited_answered' => 3,
+        'invited_not_answered' => 4,
+    ],
 ];
