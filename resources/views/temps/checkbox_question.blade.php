@@ -7,9 +7,8 @@
         <div class="row">
             <div class="text-question col-md-10">
                 {!! Form::textarea("txt-question[question][$number]", '', [
-                    'class' => 'form-control textarea-question validate',
+                    'class' => 'js-elasticArea form-control textarea-question validate',
                     'placeholder' => trans('home.enter_question_here'),
-                    'required' => true,
                 ]) !!}
             </div>
             <div class="col-md-2">
@@ -34,10 +33,9 @@
             <div class="col-md-1 col-xs-1"><i class="fa fa-square-o"></i></div>
             <div class="col-md-9 col-xs-7">
                 <div class="div-text-answer">
-                    {!! Form::textarea("txt-question[answers][$number][][" . config('survey.type_checkbox') . "]", '', [
-                        'class' => 'form-control textarea-question validate',
+                    {!! Form::textarea("txt-question[answers][$number][0][" . config('survey.type_checkbox') . "]", '', [
+                        'class' => 'js-elasticArea form-control textarea-question validate',
                         'placeholder' => trans('home.enter_answer_here'),
-                        'required' => true,
                     ]) !!}
                 </div>
             </div>
@@ -63,10 +61,9 @@
             <div class="col-md-1 col-xs-1"><i class="fa fa-square-o"></i></div>
             <div class="col-md-9 col-xs-7">
                 <div class="div-text-answer">
-                    {!! Form::textarea("txt-question[answers][$number][][" . config('survey.type_checkbox') . "]", '', [
-                        'class' => 'form-control textarea-question validate',
+                    {!! Form::textarea("txt-question[answers][$number][1][" . config('survey.type_checkbox') . "]", '', [
+                        'class' => 'js-elasticArea form-control textarea-question validate',
                         'placeholder' => trans('home.enter_answer_here'),
-                        'required' => true,
                     ]) !!}
                 </div>
             </div>
@@ -95,7 +92,7 @@
                 {{ trans('home.add_option') }}
             </span>
             <span class="add-checkbox-other other{{ $number }}"
-                typeId="{{ config('survey.type_other_checbox') }}"
+                typeId="{{ config('survey.type_other_checkbox') }}"
                 url="{{ action('TempController@addTemp', config('temp.other_checkbox')) }}">
                 <span class="span-other">{{ trans('home.or') }}</span>
                 {{ trans('home.add_other') }}

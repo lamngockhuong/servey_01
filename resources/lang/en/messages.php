@@ -39,4 +39,6 @@ return [
     'object_updated_unexicute' => '{0}The process update user information is not exicute.|{1} The process update survey content is not exicute.',
     'answer_complete' => 'You are finish survey',
     'answer_is_complete' => 'Thank :name, your answer about ":survey" is sended to us.',
+    'survey_answered' => 'You have answered the maximum number of times for this survey.',
+    'duplicate_successfully' => 'The survey has been duplicated successfully!<br>Now, You can start to use the survey!',
 ];

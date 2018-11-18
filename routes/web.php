@@ -93,6 +93,10 @@ Route::post('/delete-survey', 'SurveyController@delete');
 
 Route::post('/close-survey/{id}', 'SurveyController@close');
 
+Route::post('/open-survey/{id}', 'SurveyController@open');
+
+Route::post('/duplicate-survey/{id}', 'SurveyController@duplicate');
+
 Route::get('/export/{id}/{type}', 'User\ExportController@export');
 
 Route::group(['prefix' => '/home'], function () {
@@ -142,7 +146,7 @@ Route::get('/show/{token}', 'SurveyController@showDetail');
 
 Route::put('/update-survey/{id}', 'SurveyController@updateSurvey');
 
-Route::get('/show-user-answer-detail/{surveyId}/{userId?}/{email?}/{name?}', 'AnswerController@showMultiHistory');
+Route::get('/show-user-answer-detail/{surveyId}/{userId?}/{email?}/{name?}/{clientIp?}', 'AnswerController@showMultiHistory');
 
 Route::post('/update/{id}/{token}', 'SurveyController@updateSurveyContent');
 
@@ -151,3 +155,11 @@ Route::get('/feedback', 'FeedbackController@getFeedback');
 Route::post('/post-feedback', 'FeedbackController@create');
 
 Route::get('/answer/completed/{survey}/{name?}', 'ResultController@show');
+
+Route::post('update-link-survey', 'AnswerController@updateLinkSurvey');
+
+Route::post('verify-link-survey', 'AnswerController@verifyLinkSurvey');
+
+Route::post('survey/get-deadline', 'AnswerController@getDeadline');
+
+Route::post('ajax/get-mail-suggestion', 'SurveyController@getMailSuggestion');

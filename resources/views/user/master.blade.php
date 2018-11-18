@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class=" js no-touch csstransforms csstransitions">
+<html lang="{{ app()->getLocale() }}" class=" js no-touch csstransforms csstransitions">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>{{ trans('info.fsurvey') }}</title>
@@ -8,7 +8,6 @@
         <link rel="shortcut icon" href="{{ config('settings.image_path_system') . 'favicon.ico' }}" type="image/x-icon">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         @include('library.css-file')
-        @include('library.js-file')
     </head>
     <body>
         <div class="loader">
@@ -28,7 +27,6 @@
             'data-question' => config('temp.data_question'),
             'data-error' => trans('home.error'),
             'data-confirm' => trans('temp.confirm'),
-            'data-close-confirm' => trans('temp.close-confirm'),
             'data-email-invalid' => trans('temp.email_invalid'),
             'data-host' => config('app.socket.socket_host'),
             'data-port' => config('app.socket.socket_port'),
@@ -95,5 +93,6 @@
                 </div>
             </div>
         </div>
+        @include('library.js-file')
     </body>
 </html>

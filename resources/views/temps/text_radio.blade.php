@@ -4,10 +4,9 @@
         <div class="col-md-1 col-xs-1"><i class="fa fa-circle-o"></i></div>
         <div class="col-md-9 col-xs-7">
             <div class="div-text-answer">
-                {!! Form::textarea("txt-question[answers][$number][][" . config('survey.type_radio') . "]", isset($answer->content) ? $answer->content : '', [
-                    'class' => 'form-control textarea-question',
+                {!! Form::textarea("txt-question[answers][$number][$numberAnswer][" . config('survey.type_radio') . "]", isset($answer->content) ? $answer->content : '', [
+                    'class' => 'js-elasticArea form-control textarea-question',
                     'placeholder' => trans('home.enter_answer_here'),
-                    'required' => true,
                 ]) !!}
             </div>
         </div>

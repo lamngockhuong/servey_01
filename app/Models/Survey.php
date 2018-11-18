@@ -13,7 +13,9 @@ class Survey extends Model
         'feature',
         'token',
         'status',
+        'start_time',
         'deadline',
+        'next_reminder_time',
         'description',
         'mail',
         'user_name',
@@ -40,11 +42,6 @@ class Survey extends Model
         return $this->hasMany(Like::class);
     }
 
-    public function setTokenAttribute($value)
-    {
-        return $this->attributes['token'] = (strlen($value) >= 32) ? $value : md5(uniqid(rand(), true));
-    }
-
     public function getDeadlineAttribute()
     {
         return (!empty($this->attributes['deadline']))
@@ -57,6 +54,11 @@ class Survey extends Model
         return $this->hasMany(Temp::class);
     }
 
+    public function settings()
+    {
+        return $this->hasMany(Setting::class);
+    }
+
     public function getIsOpenAttribute()
     {
         return (empty($this->attributes['deadline']) || Carbon::parse($this->attributes['deadline'])->gt(Carbon::now()));
@@ -65,5 +67,10 @@ class Survey extends Model
     public function getSubTitleAttribute()
     {
         return str_limit($this->attributes['title'], config('settings.title_length_default'));
+    }
+
+    public function getIsExpiredAttribute()
+    {
+        return empty($this->attributes['deadline']) ? false : $this->attributes['deadline'] <= Carbon::now()->toDateTimeString();
     }
 }

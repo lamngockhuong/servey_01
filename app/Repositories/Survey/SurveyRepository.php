@@ -9,28 +9,15 @@ use App\Repositories\Like\LikeInterface;
 use App\Repositories\Invite\InviteInterface;
 use App\Repositories\Setting\SettingInterface;
 use App\Repositories\BaseRepository;
+use App\Models\Question;
 use Carbon\Carbon;
 use App\Models\Survey;
 
 class SurveyRepository extends BaseRepository implements SurveyInterface
 {
-    protected $likeRepository;
-    protected $questionRepository;
-    protected $inviteRepository;
-    protected $settingRepository;
-
-    public function __construct(
-        Survey $survey,
-        QuestionInterface $question,
-        LikeInterface $like,
-        InviteInterface $invite,
-        SettingInterface $setting
-    ) {
+    public function __construct(Survey $survey)
+    {
         parent::__construct($survey);
-        $this->likeRepository = $like;
-        $this->inviteRepository = $invite;
-        $this->questionRepository = $question;
-        $this->settingRepository = $setting;
     }
 
     public function delete($ids)
@@ -38,9 +25,10 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         DB::beginTransaction();
         try {
             $ids = is_array($ids) ? $ids : [$ids];
-            $this->inviteRepository->deleteBySurveyId($ids);
-            $this->likeRepository->deleteBySurveyId($ids);
-            $this->questionRepository->deleteBySurveyId($ids);
+            app(InviteInterface::class)->deleteBySurveyId($ids);
+            app(LikeInterface::class)->deleteBySurveyId($ids);
+            app(QuestionInterface::class)->deleteBySurveyId($ids);
+            app(SettingInterface::class)->deleteBySurveyId($ids);
             parent::delete($ids);
             DB::commit();
 
@@ -60,7 +48,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             return view('errors.503');
         }
 
-        $datasInput = $this->inviteRepository->getResult($survey->id);
+        $datasInput = app(InviteInterface::class)->getResult($survey->id);
         $questions = $datasInput['questions'];
         $temp = [];
         $results = [];
@@ -137,12 +125,21 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             'token',
             'token_manage',
             'status',
+            'start_time',
+            'next_reminder_time',
             'deadline',
             'description',
             'user_name',
         ]);
 
         // if the lang is english will be format from M-D-Y to M/D/Y
+        if ($inputs['start_time']) {
+            $inputs['start_time'] = $surveyInputs['start_time'] = Carbon::parse(in_array($locale, config('settings.sameFormatDateTime'))
+                ? str_replace('-', '/', $surveyInputs['start_time'])
+                : $surveyInputs['start_time'])
+                ->toDateTimeString();
+        }
+
         if ($inputs['deadline']) {
             $inputs['deadline'] = $surveyInputs['deadline'] = Carbon::parse(in_array($locale, config('settings.sameFormatDateTime'))
                 ? str_replace('-', '/', $surveyInputs['deadline'])
@@ -150,9 +147,18 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
                 ->toDateTimeString();
         }
 
-        $surveyInputs['status'] = config('survey.status.avaiable');
-        $surveyInputs['deadline'] = ($inputs['deadline']) ?: null;
-        $surveyInputs['description'] = ($inputs['description']) ?: null;
+        if ($inputs['next_reminder_time']) {
+            $inputs['next_reminder_time'] = $surveyInputs['next_reminder_time'] = Carbon::parse(in_array($locale, config('settings.sameFormatDateTime'))
+                ? str_replace('-', '/', $surveyInputs['next_reminder_time'])
+                : $surveyInputs['next_reminder_time'])
+                ->toDateTimeString();
+        }
+
+        $surveyInputs['status'] = config('survey.status.available');
+        $surveyInputs['start_time'] = $inputs['start_time'] ?: null;
+        $surveyInputs['deadline'] = $inputs['deadline'] ?: null;
+        $surveyInputs['next_reminder_time'] = $inputs['next_reminder_time'] ?: null;
+        $surveyInputs['description'] = $inputs['description'] ?: null;
         $surveyInputs['created_at'] = $surveyInputs['updated_at'] = Carbon::now();
         $surveyId = parent::create($surveyInputs->toArray());
 
@@ -160,8 +166,8 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             return false;
         }
 
-        //(1,5) That is the settings quantity for a survey
-        foreach (range(1, 4) as $key) {
+        // (1,6) That is the settings quantity for a survey
+        foreach (range(1, 6) as $key) {
             if (!array_has($settings, $key)) {
                 $settings[$key] = null;
             }
@@ -171,11 +177,11 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             $settings[config('settings.key.tailMail')] = null;
         }
 
-        $this->settingRepository->createMultiSetting($settings, $surveyId);
+        app(SettingInterface::class)->createMultiSetting($settings, $surveyId);
         $txtQuestion = $arrayQuestionWithAnswer;
         $questions = $txtQuestion['question'];
         $answers = $txtQuestion['answers'];
-        $this->questionRepository
+        app(QuestionInterface::class)
             ->createMultiQuestion(
                 $surveyId,
                 $questions,
@@ -196,7 +202,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             $surveyIds->lists('id')->toArray()
         );
 
-        return $this->settingRepository
+        return app(SettingInterface::class)
             ->whereIn('survey_id', $ids)
             ->where([
                 'key' => config('settings.key.limitAnswer'),
@@ -208,7 +214,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
 
     public function listsSurvey($userId, $email = null)
     {
-        $invites = $inviteIds = $this->inviteRepository
+        $invites = $inviteIds = app(InviteInterface::class)
             ->where('recevier_id', $userId)
             ->orWhere('mail', $email);
         $surveys = $surveyIds = $this->where('user_id', $userId)->orWhere('mail', $email);
@@ -233,7 +239,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         if (!$date || !$inputs['status']) {
             return false;
         } elseif (!$inputs['type']) {
-            $invite = $this->inviteRepository
+            $invite = app(InviteInterface::class)
                 ->where('recevier_id', $inputs['userId'])
                 ->where('survey_id', $inputs['surveyId'])
                 ->orWhere(function ($query) use ($email, $surveyId) {
@@ -251,52 +257,77 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             return [];
         }
 
-        return $this->settingRepository
+        return app(SettingInterface::class)
             ->where('survey_id', $surveyId)
             ->lists('value', 'key')
             ->toArray();
     }
 
-    public function getHistory($userId, $surveyId, array $options)
+    public function getHistory($userId, $clientIp, $surveyId, array $options)
     {
-        if (!$userId && $options['type'] == 'history' || !$surveyId) {
+        if (!$surveyId) {
             return [
                 'history' => [],
                 'results' => [],
             ];
         }
 
-        if ($options['type'] == 'history') {
-            $results = $this->questionRepository
-                ->getResultByQuestionIds($surveyId)
-                ->where('sender_id', $userId)
-                ->get();
-        } else {
-            $email = $options['email'];
-            $name = $options['name'];
-            $results = $this->questionRepository
-                ->getResultByQuestionIds($surveyId)
-                ->where(function($query) use ($userId, $email) {
-                    $query->where('sender_id', $userId)
-                        ->orWhere('email', $email);
-                })
-                ->get()
-                ->toArray();
 
-            if (empty($email) && $name) {
-                $results = $this->questionRepository
+        if ($userId) {
+            if ($options['type'] == 'history') {
+                $results = app(QuestionInterface::class)
                     ->getResultByQuestionIds($surveyId)
-                    ->where(function($query) use ($userId, $name) {
-                        $query->where('sender_id', $userId)
-                            ->orWhere('name', $name);
-                    })
+                    ->where('sender_id', $userId)
+                    ->get();
+            } else {
+                $email = $options['email'];
+                $name = $options['name'];
+                $results = app(QuestionInterface::class)
+                    ->getResultByQuestionIds($surveyId)
+                    ->where(
+                        function ($query) use ($userId, $clientIp, $email) {
+                            $query->where('sender_id', $userId)
+                                ->orWhere(
+                                    function ($query) use ($clientIp, $email) {
+                                        $query->where('email', $email)
+                                            ->where('client_ip', $clientIp);
+                                    }
+                                );
+                        }
+                    )
                     ->get()
                     ->toArray();
+
+                if (empty($email) && $name) {
+                    $results = app(QuestionInterface::class)
+                        ->getResultByQuestionIds($surveyId)
+                        ->where(
+                            function ($query) use ($userId, $clientIp, $name) {
+                                $query->where('sender_id', $userId)
+                                    ->orWhere(
+                                        function ($query) use ($clientIp, $name) {
+                                            $query->where('name', $name)
+                                                ->where('client_ip', $clientIp);
+                                        }
+                                    );
+                            }
+                        )
+                        ->get()
+                        ->toArray();
+                }
+
+                $collection = collect($results);
+
+                return $collection->groupBy('created_at')->toArray();
             }
-
-            $collection = collect($results);
-
-            return $collection->groupBy('created_at')->toArray();
+        } else {
+            if ($options['type'] == 'history') {
+                $results = app(QuestionInterface::class)
+                    ->getResultByQuestionIds($surveyId)
+                    ->where('sender_id', null)
+                    ->where('client_ip', $clientIp)
+                    ->get();
+            }
         }
 
         if (!$results) {
@@ -326,7 +357,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             return false;
         }
 
-        $results = $this->questionRepository
+        $results = app(QuestionInterface::class)
             ->getResultByQuestionIds($survey->id)
             ->with('sender');
         $results = $results->distinct('created_at')->get([
@@ -334,6 +365,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
             'name',
             'email',
             'sender_id',
+            'client_ip',
         ])
         ->toArray();
 
@@ -353,16 +385,9 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         */
         $settings = $this->getSettings($survey->id);
 
-        if ($settings[config('settings.key.requireAnswer')] == config('settings.require.name')) {
-            $userNotLogin = in_array('', array_keys($collection))
-                ? collect($collection[''])->groupBy('name')->toArray()
+        $userNotLogin = in_array('', array_keys($collection))
+                ? collect(collect($collection['']))->groupBy('client_ip')->toArray()
                 : [];
-        } else {
-            $userNotLogin = in_array('', array_keys($collection))
-                ? collect($collection[''])->groupBy('email')->toArray()
-                : [];
-        }
-
 
         return array_merge($userLogin, $userNotLogin);
     }
@@ -410,6 +435,7 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
     {
         $survey = $this->model->find($id);
 
+        $checkRequireAnswer = $survey->settings()->where('key', config('settings.key.requireAnswer'))->pluck('value', 'key')->all();
         $results = [];
         $questions = $survey->questions()->with('results.answer')->get()->all();
         $numberResults = count($survey->questions->first()->results()->get()->all());
@@ -418,8 +444,8 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         for ($i = 0; $i < $numberResults; $i ++) {
             $question = [];
             for ($j = 0; $j < $numberQuestion; $j ++) {
-                if (isset ($questions[$j]['results'][$i])) {
-                    $question[] = $questions[$j]['results'][$i];
+                if (isset($questions[$j]['results'][$i])) {
+                    $question = $questions[$j]['results'][$i];
                 }
             }
 
@@ -429,6 +455,41 @@ class SurveyRepository extends BaseRepository implements SurveyInterface
         return [
             'questions' => $questions,
             'results' => $results,
+            'checkRequireAnswer' => $checkRequireAnswer,
         ];
+    }
+
+    public function duplicateSurvey($survey)
+    {
+        $survey->load('questions', 'settings');
+        $newSurvey = $survey->replicate();
+
+        $token = md5(uniqid(rand(), true));
+        $tokenManage = md5(uniqid(rand(), true));
+
+        $newSurvey->token = $token;
+        $newSurvey->token_manage = $tokenManage;
+
+        $newSurvey->deadline = null;
+        $newSurvey->status = config('survey.status.block');
+
+        $newSurvey->push();
+
+        foreach ($survey->getRelations() as $relation => $items) {
+            foreach ($items as $item) {
+                $newItemRelation = $newSurvey->{$relation}()->create($item->toArray());
+
+                if ($newItemRelation instanceof Question) {
+                    $item->duplicate($newItemRelation);
+                }
+            }
+        }
+
+        return $newSurvey;
+    }
+
+    public function checkExist($token)
+    {
+        return $this->model->where('token', $token)->exists();
     }
 }

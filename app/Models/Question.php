@@ -41,6 +41,14 @@ class Question extends Model
         return $this->hasMany(Answer::class)->orderBy('type');
     }
 
+    public function duplicate($newQuestion)
+    {
+        $items = $this->answers;
+        foreach ($items as $item) {
+            $newQuestion->answers()->create($item->toArray());
+        }
+    }
+
     public function getImageAttribute()
     {
         if (empty($this->attributes['image'])) {

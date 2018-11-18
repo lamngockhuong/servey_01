@@ -24,7 +24,7 @@ class CloseSurveyCommand extends Command
      *
      * @var string
      */
-    protected $description = 'update database when the suvey expired';
+    protected $description = 'Update database when the suvey expired';
 
     /**
      * Create a new command instance.
@@ -47,16 +47,16 @@ class CloseSurveyCommand extends Command
     {
         $surveyIds = $this->surveyRepository
             ->where('deadline', '<', Carbon::now())
-            ->where('status', '<>', 0)
+            ->where('status', '<>', config('survey.status.block'))
             ->lists('id')
-            ->toArray();
+            ->all();
         $surveyInSetting = $this->settingRepository
             ->where('key', config('settings.key.limitAnswer'))
             ->where('value', '0')
             ->lists('survey_id')
-            ->toArray();
+            ->all();
         $surveyCloses = array_unique(array_merge($surveyIds, $surveyInSetting));
         $this->surveyRepository->newQuery(new Survey());
-        $this->surveyRepository->multiUpdate('id', $surveyInSetting, ['status' => 0]);
+        $this->surveyRepository->multiUpdate('id', $surveyCloses, ['status' => config('survey.status.block')]);
     }
 }

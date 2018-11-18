@@ -3,7 +3,7 @@
         <div class="row">
             <div class="text-question col-md-10">
                 {!! Form::textarea("txt-question[question][$number]", '', [
-                    'class' => 'form-control textarea-question validate',
+                    'class' => 'js-elasticArea form-control textarea-question validate',
                     'placeholder' => trans('home.enter_question_here'),
                     'required' => true,
                 ]) !!}

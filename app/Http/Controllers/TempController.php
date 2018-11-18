@@ -29,7 +29,7 @@ class TempController extends Controller
                     ->render();
                 break;
             case config('temp.checkbox_answer'):
-                $param = $request->only('number', 'numberAnswer', 'type');
+                $param = $request->only('number', 'numberAnswer');
                 $data = view('temps.text_checkbox', $param)
                     ->render();
                 break;

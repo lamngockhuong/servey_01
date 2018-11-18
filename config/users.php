@@ -2,7 +2,7 @@
 
 return [
     'avatar_default' => 'default.png',
-    'avatar_path' => 'uploads/images',
+    'avatar_path' => 'public/uploads/images',
     'password_default' => '123123',
     'level' => [
         'user' => 0,

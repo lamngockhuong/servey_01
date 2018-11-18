@@ -188,6 +188,7 @@ return [
         Barryvdh\DomPDF\ServiceProvider::class,
         Torann\DatabaseBackup\DatabaseBackupServiceProvider::class,
         Framgia\Education\Auth\FramgiaAuthServiceProvider::class,
+        Mariuzzo\LaravelJsLocalization\LaravelJsLocalizationServiceProvider::class,
     ],
 
     /*

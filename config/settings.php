@@ -61,11 +61,18 @@ return [
         'hideResult' => 3,
         'requireOnce' => 4,
         'tailMail' => 5,
+        'reminder' => 6,
     ],
     'require' => [
         'email' => 1,
         'name' => 2,
         'both' => 3,
+        'loginWsm' => 4,
+    ],
+    'reminder' => [
+        'week' => 1,
+        'month' => 2,
+        'quarter' => 3,
     ],
     'listKey' => [
         1,
@@ -73,6 +80,7 @@ return [
         3,
         4,
         5,
+        6,
     ],
     'email_unidentified' => 0,
     'name_unidentified' => 0,
@@ -84,5 +92,9 @@ return [
     ],
     'title_length_default' => 20,
     'max_limit' => 10,
-    'isPrivate' => 1,
+    'cookie' => [
+        'timeout' => [
+            'one_day' => 1440,
+        ],
+    ],
 ];

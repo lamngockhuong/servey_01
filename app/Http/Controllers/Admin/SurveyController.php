@@ -46,7 +46,7 @@ class SurveyController extends Controller
     public function destroySurvey(Request $request)
     {
         if ($request->ajax()) {
-            $idSurvey = $request->get("idSurvey");
+            $idSurvey = $request->get('idSurvey');
             $this->surveyRepository->delete($idSurvey);
         }
 

@@ -13,6 +13,7 @@ return [
     'datetime' => 'dd/mm/yyyy',
     'new_password' => '新しいパスワード',
     'old_password' => '現在のパスワード',
+    'starttime' => 'Time to start survey',
     'duration' => 'アンケートの期間',
     'title' => 'タイトル',
     'email' => 'メールアドレス',
@@ -20,7 +21,7 @@ return [
     'public' => '公共',
     'this_survey' => 'この調査',
     'description' => 'アンケートの説明をご入力ください',
-    'enter_info' => 'Enter your info',
+    'enter_info' => '情報を入力する。',
     'yes' => 'はい',
     'no' => 'いいえ',
     'fsurvey' => 'FSurvey',
@@ -35,4 +36,5 @@ return [
     'datetime_format' => 'M d Y',
     'feedback' => 'ここにあなたのフィードバックを入力してください',
     'private' => 'プライベート',
+    'setting_survey' => '設定',
 ];

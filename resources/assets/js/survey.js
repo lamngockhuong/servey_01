@@ -43,7 +43,11 @@ $(document).ready(function() {
                 if (response.success) {
                     window.location = callback;
                 } else {
-                    alert(error);
+                    var data = {
+                        message: error,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
         });
     });

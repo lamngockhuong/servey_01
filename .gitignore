@@ -16,4 +16,9 @@ node_modules/
 /public/build
 /public/rev-manifest.json
 /storage
+/log
 package-lock.json
+public/storage
+
+# IDE hidden folder
+.vscode

@@ -11,14 +11,10 @@ use App\Models\User;
 
 class SocialAccountRepository extends BaseRepository
 {
-    protected $userRepository;
 
-    public function __construct(
-        SocialAccount $socialAccount,
-        UserInterface $userRepository
-    ) {
+    public function __construct(SocialAccount $socialAccount) 
+    {
         parent::__construct($socialAccount);
-        $this->userRepository = $userRepository;
     }
 
     public function createOrGetUser($providerUser, $provider)
@@ -29,7 +25,7 @@ class SocialAccountRepository extends BaseRepository
         $user = null;
 
         if ($account) {
-            $user = $this->userRepository->find($account->user_id);
+            $user = app(UserInterface::class)->find($account->user_id);
             $data = [
                 'email' => $providerUser->getEmail(),
                 'name' => $providerUser->getName(),
@@ -50,8 +46,8 @@ class SocialAccountRepository extends BaseRepository
             }
 
             if ($providerUser->getEmail()) {
-                $this->userRepository->newQuery(new User());
-                $check = $this->userRepository
+                app(UserInterface::class)->newQuery(new User());
+                $check = app(UserInterface::class)
                     ->where('email', $providerUser->getEmail())
                     ->where('id', '<>', $user->id)
                     ->exists();
@@ -70,7 +66,7 @@ class SocialAccountRepository extends BaseRepository
         }
 
         if ($providerUser->getEmail()) {
-            $user = $this->userRepository->where('email', $providerUser->getEmail())->first();
+            $user = app(UserInterface::class)->where('email', $providerUser->getEmail())->first();
         }
 
         if (!$user) {
@@ -96,7 +92,7 @@ class SocialAccountRepository extends BaseRepository
                 }
             }
 
-            $user = $this->userRepository->firstOrCreate($newUser);
+            $user = app(UserInterface::class)->firstOrCreate($newUser);
         }
 
         $account = $this->create([

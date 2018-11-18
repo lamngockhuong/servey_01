@@ -135,9 +135,11 @@ class AnswerRequest extends FormRequest
                 case config('settings.require.email'):
                     $rules['email-answer'] = 'required|email';
                     break;
-                default:
+                case config('settings.require.both'):
                     $rules['email-answer'] = 'required|email';
                     $rules['name-answer'] = 'required|max:40';
+                    break;
+                default:
                     break;
             }
         }
@@ -178,7 +180,7 @@ class AnswerRequest extends FormRequest
                         'attribute' => class_basename(User::class)
                     ]);
                     break;
-                default:
+                case config('settings.require.both'):
                     $messages['name-answer.required'] = trans('validation.required', [
                         'attribute' => class_basename(User::class)
                     ]);
@@ -191,6 +193,8 @@ class AnswerRequest extends FormRequest
                     $messages['email-answer.email'] = trans('validation.email', [
                         'attribute' => class_basename(User::class)
                     ]);
+                    break;
+                default:
                     break;
             }
         }

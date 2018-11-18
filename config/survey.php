@@ -14,7 +14,7 @@ return [
     'type_other_checkbox' => 6,
     'type_date' => 7,
     'status' => [
-        'avaiable' => 1,
+        'available' => 1,
         'block' => 0,
     ],
     'invite' => [
@@ -38,4 +38,6 @@ return [
     ],
     'maxUpdate' => 1,
     'maxEdit' => 3,
+    'time_to_countdown_default' => 0,
+    'get_top_mail_suggestion' => 4,
 ];

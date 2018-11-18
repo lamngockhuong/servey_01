@@ -27,7 +27,8 @@ class UpdateSurveyRequest extends FormRequest
         $realTime = Carbon::now()->addMinutes(30)->format(trans('temp.format_with_trans'));
 
         return [
-            'deadline' => 'date_format:' . trans('temp.format_with_trans') . '|after:' . $realTime,
+            'start_time' => 'date_format:' . trans('temp.format_with_trans'),
+            'deadline' => 'date_format:' . trans('temp.format_with_trans') . '|after:start_time|after:' . $realTime,
             'title' => 'required|max:255',
         ];
     }

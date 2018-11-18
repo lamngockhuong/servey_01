@@ -9,6 +9,7 @@ use Socialite;
 use Auth;
 use FAuth;
 use Exception;
+use Session;
 
 class SocialAuthController extends Controller
 {
@@ -26,6 +27,13 @@ class SocialAuthController extends Controller
 
             if ($user->isActive()) {
                 auth()->login($user);
+
+                if (Session::has('nextUrl')) {
+                    $url = Session::get('nextUrl');
+                    Session::forget('nextUrl');
+
+                    return redirect()->intended($url);
+                }
 
                 return redirect()->intended(action('SurveyController@index'));
             }

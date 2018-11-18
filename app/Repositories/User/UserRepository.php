@@ -3,6 +3,7 @@
 namespace  App\Repositories\User;
 
 use DB;
+use Storage;
 use Exception;
 use App\Repositories\BaseRepository;
 use App\Models\User;
@@ -36,9 +37,22 @@ class UserRepository extends BaseRepository implements UserInterface
             return config('users.avatar_default');
         }
 
-        $fileName = uniqid(rand(), true) . '.' . $file->getClientOriginalExtension();
-        $file->move(public_path(config('users.avatar_path')), $fileName);
+        $filePath = $file->store(config('users.avatar_path'));
+        $result = explode('/', $filePath);
+        $fileName = end($result);
 
         return $fileName;
+    }
+
+    public function findEmail($data, $userId)
+    {
+        $users = $this->model
+            ->where('email', 'like', '%' . $data['keyword'] . '%')
+            ->where('id', '!=', $userId);
+        if (count($data['emails'])) {
+            $users = $users->whereNotIn('email', $data['emails']);
+        }
+
+        return $users->paginate(config('survey.get_top_mail_suggestion'));
     }
 }

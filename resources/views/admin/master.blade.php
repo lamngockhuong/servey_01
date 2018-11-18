@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8" />
     {!! Html::style('assets/img/favicon.ico', ['type' => 'image/png', 'rel' => 'icon']) !!}
@@ -75,6 +75,7 @@
 
     {!! Html::script(elixir('/admin/js/jquery.js')) !!}
     {!! Html::script(elixir('/js/app.js')) !!}
+    {!! Html::script(elixir('/js/messages.js')) !!}
     {!! Html::script(elixir('/admin/js/bootstrap.min.js')) !!}
     {!! Html::script(elixir('/admin/js/admin-script.js')) !!}}
     {!! Html::script(elixir('/admin/js/survey.js')) !!}

@@ -31,4 +31,5 @@ return [
     'answer_changed' => 'This answer has changed -> ',
     'question_deleted' => 'This question has been deleted.',
     'question_changed' => 'This question answer has changed -> ',
+    'not_open' => 'This Survey is not ready to start.',
 ];

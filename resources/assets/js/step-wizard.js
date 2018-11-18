@@ -1,3 +1,16 @@
+jQuery.expr[':'].regex = function (elem, index, match) {
+    var matchParams = match[3].split(','),
+        validLabels = /^(data|css):/,
+        attr = {
+            method: matchParams[0].match(validLabels) ?
+                matchParams[0].split(':')[0] : 'attr',
+            property: matchParams.shift().replace(validLabels, '')
+        },
+        regexFlags = 'ig',
+        regex = new RegExp(matchParams.join('').replace(/^\s+|\s+$/g, ''), regexFlags);
+    return regex.test(jQuery(elem)[attr.method](attr.property));
+}
+
 $(document).ready(function() {
     var error = $('.data').attr('data-error');
     var notice = $('.data').attr('data-confirm');
@@ -16,36 +29,106 @@ $(document).ready(function() {
         return text.test(email);
     }
 
-    $("#survey_container").wizard({
+    jQuery.validator.addMethod('moreThan30Minutes', function (value, element) {
+        var today = new Date();
+        var dateChoose = value;
+
+        if (formatDate == 'DD-MM-YYYY hh:mm A') {
+            dateChoose = dateChoose.split('-')[1] + '-' + dateChoose.split('-')[0] + dateChoose.substring(5);
+        }
+
+        var dealineTime = new Date(Date.parse(dateChoose));
+        var validateTime = dealineTime.getTime() - today.getTime();
+
+        if (!dealineTime.length && validateTime < 1800000) {
+            return false;
+        }
+
+        return true;
+    }, Lang.get('js.survey.more_than_30_minutes'));
+
+    jQuery.validator.addMethod('afterStartTime', function (value, element) {
+        var startTime = $('#starttime').val();
+
+        if (!startTime.length) {
+            return true;
+        }
+
+        var dateChoose = value;
+
+        if (formatDate == 'DD-MM-YYYY hh:mm A') {
+            startTime = startTime.split('-')[1] + '-' + startTime.split('-')[0] + startTime.substring(5);
+            dateChoose = dateChoose.split('-')[1] + '-' + dateChoose.split('-')[0] + dateChoose.substring(5);
+        }
+
+        startTime = new Date(Date.parse(startTime));
+        var dealineTime = new Date(Date.parse(dateChoose));
+        var validateTime = dealineTime.getTime() - startTime.getTime();
+
+        if (!dealineTime.length && validateTime <= 0) {
+            return false;
+        }
+
+        return true;
+    }, Lang.get('js.survey.after_start_time'));
+
+    $.validator.addMethod('questionunique', function (value, element) {
+        var parentForm = $(element).closest('form');
+        var timeRepeated = 0;
+        if (value.trim()) {
+            $(parentForm.find('textarea:regex(name, ^txt-question\\[question\\]\\[.*\\])')).each(function () {
+                if ($(this).val() === value) {
+                    timeRepeated++;
+                }
+            });
+        }
+
+        return timeRepeated === 1 || timeRepeated === 0;
+
+    }, Lang.get('js.survey.duplicate_question'));
+
+    $.validator.addMethod('answersunique', function (value, element) {
+        var parentForm = $(element).closest('li');
+        var timeRepeated = 0;
+        if (value.trim()) {
+            $(parentForm.find('textarea:regex(name, ^txt-question\\[answers\\]\\[.*\\]\\[.*\\]\\[(1|2)\\])')).each(function () {
+                if ($(this).val() === value) {
+                    timeRepeated++;
+                }
+            });
+        }
+
+        return timeRepeated === 1 || timeRepeated === 0;
+
+    }, Lang.get('js.survey.duplicate_answer'));
+
+    var form = $('#survey_container #wrapped');
+    form.validate({
+        rules: {
+            email: {
+                required: true,
+                email: true,
+                maxlength: 255,
+            },
+            name: {
+                required: true,
+                maxlength: 255,
+            },
+            title: {
+                required: true,
+                maxlength: 255,
+            },
+            deadline: {
+                moreThan30Minutes: true,
+                afterStartTime: true,
+            },
+        },
+    });
+
+    $('#survey_container').wizard({
         stepsWrapper: "#middle-wizard",
         beforeForward: function( event, state ) {
             switch (state.stepIndex) {
-                case 1: {
-                    if (!validateEmail($('#email').val())) {
-                        $('#emailError').css('display', 'block');
-
-                        return false;
-                    }
-
-                    var today = new Date();
-                    var dateChoose = $('.frm-deadline').val();
-
-                    if (formatDate == 'DD-MM-YYYY hh:mm A') {
-                        dateChoose = dateChoose.split('-')[1] + '-' + dateChoose.split('-')[0] + dateChoose.substring(5);
-                    }
-
-                    var dealineTime = new Date(Date.parse(dateChoose));
-                    var validateTime = dealineTime.getTime() - today.getTime();
-
-                    if ( dealineTime.length != 0 && validateTime < 1800000) {
-                        $('.validate-time').css('display', 'block');
-
-                        return false;
-                    }
-
-                    break;
-                }
-
                 case 2: {
                     $('html, body').animate({scrollTop: 0}, 500);
 
@@ -57,6 +140,22 @@ $(document).ready(function() {
 
                         return false;
                     }
+
+                    $('textarea:regex(name, ^txt-question\\[question\\]\\[.*\\])').each(function () {
+                        $(this).rules('add', {
+                            required: true,
+                            maxlength: 255,
+                            questionunique: true,
+                        });
+                    });
+
+                    $('textarea:regex(name, ^txt-question\\[answers\\]\\[.*\\]\\[.*\\]\\[(1|2)\\])').each(function () {
+                        $(this).rules('add', {
+                            required: true,
+                            maxlength: 255,
+                            answersunique: true,
+                        });
+                    });
 
                     break;
                 }
@@ -71,6 +170,9 @@ $(document).ready(function() {
                     var c5 = isNaN(c4);
                     var c6 = $('#require-tail-email').is(':checked');
                     var c7 = $('.frm-tailmail').val();
+                    var c8 = $('#reminder-periodically').is(':checked');
+                    var c9 = $('.option-choose-reminder').is(':checked');
+                    var c10 = $('.frm-tailreminder').val();
                     var tailMails = $('.frm-tailmail').tagsinput('items');
                     var maxLimit = $('.data').attr('data-max-limit');
                     tailMails.forEach(function (tailemail) {
@@ -118,14 +220,33 @@ $(document).ready(function() {
                         flag = false;
                     }
 
+                    if (c8 && !c9) {
+                        $('.validate-reminder-periodically')
+                            .css('display', 'block')
+                            .addClass('animated fadeInDown')
+                            .delay(3000)
+                            .slideUp(1000);
+                        flag = false;
+                    }
+
+                    if (c9 && !c10.length) {
+                        $('.validate-reminder-periodically-time')
+                            .css('display', 'block')
+                            .addClass('animated fadeInDown')
+                            .delay(3000)
+                            .slideUp(1000);
+                        flag = false;
+                    }
+
                     return flag;
                 }
 
                 case 4: {
+                    var c8 = $('#reminder-periodically').is(':checked');
                     var emails = $('input:text[name=emails]').tagsinput('items');
                     var flag = true;
-                    emails.forEach(function (email) {
 
+                    emails.forEach(function (email) {
                         if (!validateEmail(email)) {
                             flag = false;
                         }
@@ -137,14 +258,28 @@ $(document).ready(function() {
                         return false;
                     }
 
+                    if (c8 && !emails.length) {
+                        $('.validate-exists-reminder-email')
+                            .css('display', 'block')
+                            .addClass('animated fadeInDown')
+                            .delay(3000)
+                            .slideUp(1000);
+
+                        return false;
+                    }
+
                     $('.validate-email').css('display', 'none');
 
-                    break;
+                    return flag;
                 }
 
                 default: {
                     break;
                 }
+            }
+
+            if (!form.valid()) {
+                return false;
             }
         }
     });
@@ -158,6 +293,9 @@ $(document).ready(function() {
         var c5 = isNaN(c4);
         var c6 = $('#require-tail-email').is(':checked');
         var c7 = $('.frm-tailmail').val();
+        var c8 = $('#reminder-periodically').is(':checked');
+        var c9 = $('.option-choose-reminder').is(':checked');
+        var c10 = $('.frm-tailreminder').val();
         var tailMails = $('.frm-tailmail').tagsinput('items');
         var maxLimit = $('.data').attr('data-max-limit');
         tailMails.forEach(function (tailemail) {
@@ -202,6 +340,24 @@ $(document).ready(function() {
                 .delay(3000)
                 .slideUp(1000);
             $('.content-validate-tailmail').html(data.validate.invalid_mail);
+            flag = false;
+        }
+
+        if (c8 && !c9) {
+            $('.validate-reminder-periodically')
+                .css('display', 'block')
+                .addClass('animated fadeInDown')
+                .delay(3000)
+                .slideUp(1000);
+            flag = false;
+        }
+
+        if (c9 && !c10.length) {
+            $('.validate-reminder-periodically-time')
+                .css('display', 'block')
+                .addClass('animated fadeInDown')
+                .delay(3000)
+                .slideUp(1000);
             flag = false;
         }
 

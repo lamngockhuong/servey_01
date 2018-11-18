@@ -10,13 +10,18 @@ use App\Repositories\Invite\InviteInterface;
 use App\Repositories\Setting\SettingInterface;
 use App\Repositories\Question\QuestionInterface;
 use App\Http\Requests\AnswerRequest;
+use App\Traits\ClientInformation;
 use Carbon\Carbon;
 use Exception;
+use Predis\Connection\ConnectionException;
 use LRedis;
 use DB;
+use Cookie;
 
 class ResultController extends Controller
 {
+    use ClientInformation;
+
     protected $resultRepository;
     protected $surveyRepository;
     protected $inviteReposirory;
@@ -39,6 +44,12 @@ class ResultController extends Controller
 
     public function result($token, AnswerRequest $request)
     {
+        if (Cookie::get('client_ip') === null) {
+            Cookie::queue('client_ip', $this->getClientIp(), config('settings.cookie.timeout.one_day'));
+
+            return redirect(url()->current());
+        }
+
         $isSuccess = false;
         $isRunToBottom = true;
         $answers = $request->get('answer');
@@ -47,26 +58,22 @@ class ResultController extends Controller
         $message = '';
         $flag = false;
         $survey = $this->surveyRepository->where('token', $token)->first();
+
+        // check limit the number of answers when submit answers for survey
+        $settings = $survey->settings->pluck('value', 'key')->all();
+        $history = $this->surveyRepository->getHistory(auth()->id(), Cookie::get('client_ip'), $survey->id, ['type' => 'history']);
+        $canAnswer = count($history['results']) < $settings[config('settings.key.limitAnswer')] || !$settings[config('settings.key.limitAnswer')];
+
+        if (!$canAnswer) {
+            return back();
+        }
+
         $emailResults = $this->questionRepository
             ->getResultByQuestionIds($survey->id)
             ->lists('email')
             ->toArray();
-        $settings = $this->settingReposirory
-            ->where('survey_id', $survey->id)
-            ->whereIn('key', array_only(config('settings.key'), [
-                'limitAnswer',
-                'tailMail',
-                'requireOnce',
-            ]))
-            ->get();
-        $requireOnce = $settings
-            ->where('key', config('settings.key.requireOnce'))
-            ->first()
-            ->value;
-        $listTailMail = $settings
-            ->where('key', config('settings.key.tailMail'))
-            ->first()
-            ->value;
+        $requireOnce = $settings[config('settings.key.requireOnce')];
+        $listTailMail = $settings[config('settings.key.tailMail')];
         $tailMailUser = substr($emailUser, strpos($emailUser, '@'));
 
         if ($listTailMail && !in_array($tailMailUser, explode(',', $listTailMail))) {
@@ -111,10 +118,10 @@ class ResultController extends Controller
 
                     foreach ($answer as $key => $value) {
                         //  Set default email and name if user not login or don't have setting require email, name or both.
-                        if (!auth()->check() && !$request->get('name-answer') && !$emailUser) {
-                            $setName = config('settings.name_unidentified');
-                            $setEmail = config('settings.email_unidentified');
-                        } else {
+                        $setName = config('settings.name_unidentified');
+                        $setEmail = config('settings.email_unidentified');
+                        
+                        if ($settings[config('settings.key.requireAnswer')]) {
                             $setName = $request->get('name-answer') ?: (
                                 auth()->check() ? auth()->user()->name : config('settings.name_unidentified')
                             );
@@ -131,6 +138,7 @@ class ResultController extends Controller
                                 'content' => $value,
                                 'name' => $setName,
                                 'email' => $setEmail,
+                                'client_ip' => Cookie::get('client_ip'),
                                 'created_at' => Carbon::now(),
                                 'updated_at' => Carbon::now(),
                             ];
@@ -152,15 +160,6 @@ class ResultController extends Controller
                 if (!empty($data)
                     && $this->resultRepository->multiCreate($data)
                 ) {
-
-                    $decreaseNumber = $settings
-                        ->where('key', config('settings.key.limitAnswer'))
-                        ->first();
-
-                    if ($decreaseNumber && $decreaseNumber->value) {
-                        $decreaseNumber->update(['value' => --$decreaseNumber->value]);
-                    }
-
                     if ($invite && $invite->status) {
                         $isSuccess = $invite->update(['status' => config('survey.invite.old')]);
                     }
@@ -192,14 +191,18 @@ class ResultController extends Controller
         $listUserAnswer = $this->surveyRepository->getUserAnswer($token);
         $status = $getCharts['status'];
         $charts = $getCharts['charts'];
-        $redis = LRedis::connection();
-        $redis->publish('answer', json_encode([
-            'success' => true,
-            'surveyId' => $survey->id,
-            'viewChart' => view('user.result.chart', compact('status', 'charts'))->render(),
-            'viewDetailResult' => view('user.result.detail-result', compact('survey'))->render(),
-            'viewUserAnswer' => view('user.result.users-answer', compact('listUserAnswer', 'survey'))->render(),
-        ]));
+
+        try {
+            $redis = LRedis::connection();
+            $redis->publish('answer', json_encode([
+                'success' => true,
+                'surveyId' => $survey->id,
+                'viewChart' => view('user.result.chart', compact('status', 'charts'))->render(),
+                'viewDetailResult' => view('user.result.detail-result', compact('survey'))->render(),
+                'viewUserAnswer' => view('user.result.users-answer', compact('listUserAnswer', 'survey'))->render(),
+            ]));
+        } catch (ConnectionException $e) {
+        }
 
         return redirect()->action('ResultController@show', [
             'name' => auth()->check() ? auth()->user()->name : null,

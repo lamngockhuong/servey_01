@@ -152,12 +152,17 @@ class User extends Authenticatable
 
     public function socialAccounts()
     {
-        return $this->hasMany(SocialAccount::class);
+        return $this->hasOne(SocialAccount::class);
     }
 
     public function getBirthdayAttribute()
     {
         return $this->attributes['birthday']
             ? Carbon::parse($this->attributes['birthday'])->format(trans('temp.format_birthday_with_trans')) : null;
+    }
+
+    public function checkLoginWsm()
+    {
+        return $this->socialAccounts()->where('provider', SocialAccount::PROVIDER_FRAMGIA)->first();
     }
 }

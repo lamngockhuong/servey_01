@@ -24,7 +24,8 @@
         "predis/predis": "1.1.1",
         "barryvdh/laravel-dompdf": "0.8.0",
         "torann/database-backup": "0.1.0",
-        "framgia-education/laravel-omniauth-hrsystem": "dev-framgia"
+        "framgia-education/laravel-omniauth-hrsystem": "dev-framgia",
+        "mariuzzo/laravel-js-localization": "^1.4"
     },
     "require-dev": {
         "fzaninotto/faker": "1.6.0",

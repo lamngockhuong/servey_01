@@ -22,4 +22,5 @@ return [
     'enter_email_password' => 'メールアドレスとパスワードを入力します。',
     'login' => 'ログイン',
     'logout' => 'ログアウト',
+    'require_login_wsm' => 'このアンケートを引き続けるように、WSMにてサインインする必要があります。'
 ];

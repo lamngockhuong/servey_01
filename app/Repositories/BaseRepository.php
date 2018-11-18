@@ -92,7 +92,7 @@ abstract class BaseRepository implements BaseInterface
         $model->fill($input);
         $model->save();
 
-        return $this;
+        return $model;
     }
 
     public function uploadImage($file, $path)
@@ -148,4 +148,5 @@ abstract class BaseRepository implements BaseInterface
     {
         return call_user_func_array([$this->model, $method], $args);
     }
+    
 }

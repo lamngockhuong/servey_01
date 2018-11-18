@@ -52,7 +52,6 @@ $(document).ready(function () {
     $(document).on('click', '#bt-block-supperadmin', function () {
         var url = $(this).attr('data-url');
         var tableType = $(this).attr('table-type');
-        alert(url);
         $.post(
             url,
             {
@@ -128,14 +127,14 @@ $(document).ready(function () {
                     'type': type
                 },
                 function(response) {
-                    
+
                     if (response.success) {
                         $( "#form-request" ).toggle( 'slow' );
                         window.location.href = href;
                     } else {
                       alert('Fail to send request');
                     }
-            }); 
+            });
         }
-    }); 
+    });
 });

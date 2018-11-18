@@ -126,9 +126,16 @@ $(document).ready(function() {
         }
     });
 
+    $('.container-setting').on('click', '#reminder-periodically', function () {
+        $('.setting-reminder').toggle(1200);
+        $('.option-choose-reminder.input-radio').prop('checked', false);
+        $('.tail-reminder').slideUp();
+        $('.frm-tailreminder').val('');
+    });
+
     $('.container-setting').on('click', '#requirement-answer', function() {
         $('.setting-requirement').toggle(1200);
-        $('.input-radio').prop('checked', false);
+        $('.option-choose-answer.input-radio').prop('checked', false);
         $('#require-tail-email').prop('checked', false);
         $('#require-oneTime').prop('checked', false);
         $('.div-option-require').slideUp();
@@ -165,7 +172,11 @@ $(document).ready(function() {
                 if (response.success) {
                     window.location.href = response.urlBack;
                 } else {
-                    alert(error);
+                    var data = {
+                        message: error,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
         });
     });
@@ -198,7 +209,9 @@ $(document).ready(function() {
             }
         }
 
-        if ($('input[name=email-answer]').length) {
+        var optionSetting = $('.required-user').attr('data-option-setting').val();
+
+        if ($('input[name=email-answer]').length && optionSetting != 4) {
             var mailUser  = $('input[name=email-answer]').val();
 
             if (mailUser) {
@@ -274,27 +287,99 @@ $(document).ready(function() {
         }
     });
 
-    $('.detail-survey').on('click', '.btn-close-survey', function() {
-        var _this = $(this);
-        var result = confirm($('.data').attr('data-close-confirm'));
-
-        if (result) {
-            var closeUrl = $(this).attr('data-url');
-            $.post(closeUrl)
-                .done(function(data) {
-                    _this.attr('disabled', true);
-                    alert(data);
-                })
-                .fail(function(data) {
-                    alert(data);
-                })
+    $('.detail-survey').on('click', '.btn-close-survey', function(event, object) {
+        if (!object) {
+            var data = {
+                message: $(this).data('message-confirm'),
+                cancelText: Lang.get('js.button.cancel'),
+                confirmText: Lang.get('js.button.yes')
+            };
+            confirmWarning(event, '.detail-survey .btn-close-survey', data);
+        } else {
+            var url = $(this).attr('data-url');
+            $.ajax({
+                url: url,
+                type: 'POST',
+                async: false,
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        $('.show-message').html(`<div class="alert col-md-4 col-md-offset-4
+                            animated fadeInDown alert-danger alert-message">${response.message}</div >`);
+                    }
+                }
+            });
         }
     });
 
-    $('.detail-survey').on('click', '.btn-remove-survey', function() {
-        var result = confirm(notice);
+    function validateTimeDeadline(value) {
+        var today = new Date();
+        var dateChoose = value;
+        var formatDate = $('.data').attr('data-format-datetime');
 
-        if (result) {
+        if (formatDate == 'DD-MM-YYYY hh:mm A') {
+            dateChoose = dateChoose.split('-')[1] + '-' + dateChoose.split('-')[0] + dateChoose.substring(5);
+        }
+
+        var dealineTime = new Date(Date.parse(dateChoose));
+        var validateTime = dealineTime.getTime() - today.getTime();
+
+        if (!dealineTime.length && validateTime < 1800000) {
+            return false;
+        }
+
+        return true;
+    }
+
+    $('.detail-survey').on('click', '.btn-open-survey', function (event, object) {
+        var deadlineDisabled = $('#deadline').is(':disabled');
+
+        if (!deadlineDisabled && !validateTimeDeadline($('#deadline').val())) {
+            $('.show-message').html(`<div class="alert col-md-4 col-md-offset-4
+            animated fadeInDown alert-danger alert-message">${Lang.get('js.survey.save_deadline_fail')}</div >`);
+            $('#deadline').focus();
+            return;
+        }
+
+        if (!object) {
+            var data = {
+                message: $(this).data('message-confirm'),
+                cancelText: Lang.get('js.button.cancel'),
+                confirmText: Lang.get('js.button.yes')
+            };
+            confirmWarning(event, '.detail-survey .btn-open-survey', data);
+        } else {
+            var url = $(this).attr('data-url');
+            $.ajax({
+                url: url,
+                data: {
+                    deadline: $('#deadline').val(),
+                    change_deadline: !deadlineDisabled,
+                },
+                type: 'POST',
+                async: false,
+                success: function (response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        $('.show-message').html(`<div class="alert col-md-4 col-md-offset-4
+                            animated fadeInDown alert-danger alert-message">${response.message}</div >`);
+                    }
+                }
+            });
+        }
+    });
+
+    $('.detail-survey').on('click', '.btn-remove-survey', function(event, object) {
+        if (!object) {
+            var data = {
+                message: notice,
+                cancelText: Lang.get('js.button.cancel'),
+                confirmText: Lang.get('js.button.yes')
+            };
+            confirmDanger(event, '.detail-survey .btn-remove-survey', data);
+        } else {
             var url = $(this).attr('data-url');
             var idSurvey = $(this).attr('id-survey');
             var redirect = $(this).attr('redirect');
@@ -308,7 +393,35 @@ $(document).ready(function() {
                     if (response.success) {
                         window.location.href = redirect;
                     } else {
-                        alert(error);
+                        $('.show-message').html(`<div class="alert col-md-4 col-md-offset-4
+                            animated fadeInDown alert-danger alert-message">${response.error}</div >`);
+                    }
+                }
+            );
+        }
+    });
+
+    $('.detail-survey').on('click', '.btn-duplicate-survey', function (event, object) {
+        if (!object) {
+            var data = {
+                message: $(this).data('message-confirm'),
+                cancelText: Lang.get('js.button.cancel'),
+                confirmText: Lang.get('js.button.yes')
+            };
+            confirmInfo(event, '.detail-survey .btn-duplicate-survey', data);
+        } else {
+            var url = $(this).attr('data-url');
+            $.ajax({
+                url: url,
+                type: 'POST',
+                async: false,
+                success: function (response) {
+                    if (response.success) {
+                        window.open(response.url, '_blank');
+                    } else {
+                        $('.show-message').html(`<div class="alert col-md-4 col-md-offset-4
+                            animated fadeInDown alert-danger alert-message">${response.message}</div >`);
+                    }
                 }
             });
         }
@@ -322,6 +435,50 @@ $(document).ready(function() {
             $('.frm-tailmail').tagsinput('removeAll');
         }
     });
+
+    $('.container-setting').on('click', '.option-choose-reminder', function () {
+        $('.tail-reminder').slideDown();
+    });
+
+    $('.container-setting').on('click', '#reminder-by-week', function () {
+        $('.frm-tailreminder').val(nextTime('week'));
+    });
+
+    $('.container-setting').on('click', '#reminder-by-month', function () {
+        $('.frm-tailreminder').val(nextTime('month'));
+    });
+
+    $('.container-setting').on('click', '#reminder-by-quarter', function () {
+        $('.frm-tailreminder').val(nextTime('quarter'));
+    });
+
+    function nextTime($type) {
+        var startTime = $('#starttime').val();
+        var nextTime = new Date();
+
+        if (startTime.length) {
+            startTime = startTime.split('-')[1] + '-' + startTime.split('-')[0] + startTime.substring(5);
+            nextTime = new Date(Date.parse(startTime));
+        }
+
+        switch ($type) {
+            case 'week':
+                nextTime.setDate(nextTime.getDate() + 7);
+                break;
+            case 'month':
+                nextTime.setMonth(nextTime.getMonth() + 1);
+                break;
+            case 'quarter':
+                nextTime.setMonth(nextTime.getMonth() + 3);
+                break;
+            default:
+                break;
+        }
+
+        nextTime = moment(nextTime).format('DD-MM-YYYY hh:mm A');
+
+        return nextTime;
+    }
 
     $('#wrapped-update').submit(function() {
        var values = $(this).serializeArray();
@@ -434,7 +591,11 @@ $(document).ready(function() {
                     location.hash = page;
                 } else {
                     location.href = url.split('?page=')[0];
-                    alert(response.messageFail);
+                    var data = {
+                        message: response.messageFail,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
         });
     }
@@ -526,5 +687,170 @@ $(document).ready(function() {
                 }
             }
         });
+    });
+
+    $('.tag-edit-link-survey').on('click', function () {
+        $('.show-public-link').addClass('hidden');
+        $('.form-edit-link-survey').removeClass('hidden');
+        $('#public-link-survey').focus().val($('#public-link-survey').val());
+    });
+
+    $('#bt-cancel-edit-link').on('click', function () {
+        $('.form-edit-link-survey').addClass('hidden');
+        $('.show-public-link').removeClass('hidden');
+    });
+
+    $('#set-link-by-slug').on('click', function () {
+        var title = $('#title').val();
+        $('#public-link-survey').val(toSlug(title));
+    })
+
+    function toSlug(str)
+    {
+        str = str.toLowerCase();
+        str = str.replace(/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/g, 'a');
+        str = str.replace(/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/g, 'e');
+        str = str.replace(/(ì|í|ị|ỉ|ĩ)/g, 'i');
+        str = str.replace(/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/g, 'o');
+        str = str.replace(/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/g, 'u');
+        str = str.replace(/(ỳ|ý|ỵ|ỷ|ỹ)/g, 'y');
+        str = str.replace(/(đ)/g, 'd');
+        str = str.replace(/([^0-9a-z-\s])/g, '');
+        str = str.replace(/(\s+)/g, '-');
+        str = str.replace(/^-+/g, '');
+        str = str.replace(/-+$/g, '');
+
+        return str;
+    }
+
+    $('#public-link-survey').keyup(function () {
+        var token = toSlug($(this).val());
+        var url = $(this).attr('verify-url');
+        var pre_token = $('#public-link-survey').attr('pre-token');
+
+        if (token == pre_token) {
+            $('#error-link').addClass('hidden');
+            $('#correct-link').removeClass('hidden');
+        } else {
+            $.ajax({
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: {
+                    token: token,
+                },
+                success: function (data) {
+                    if (!data) {
+                        $('#error-link').addClass('hidden');
+                        $('#correct-link').removeClass('hidden');
+                    } else {
+                        $('#correct-link').addClass('hidden');
+                        $('#error-link').removeClass('hidden');
+                    }
+                }
+            });
+        }
+    });
+
+    $('#bt-update-link-survey').on('click', function (event, object) {
+        if (!object) {
+            var data = {
+                message: Lang.get('js.survey.update_survey_link'),
+                cancelText: Lang.get('js.button.cancel'),
+                confirmText: Lang.get('js.button.yes')
+            };
+            confirmWarning(event, '#bt-update-link-survey', data);
+        } else {
+            var token = toSlug($('#public-link-survey').val());
+            var pre_token = $('#public-link-survey').attr('pre-token');
+
+            if (token == pre_token) {
+                $('.form-edit-link-survey').addClass('hidden');
+                $('.show-public-link').removeClass('hidden');
+            } else {
+                var survey_id = $(this).attr('id-survey');
+                var url = $(this).attr('data-url');
+                $.ajax({
+                    type: 'POST',
+                    url: url,
+                    dataType: 'json',
+                    data: {
+                        survey_id: survey_id,
+                        token: token,
+                    },
+                    success: function (data) {
+                        $('.form-edit-link-survey').addClass('hidden');
+                        $('.public-link-survey').text(data);
+                        $('.public-link-survey').attr('href', data);
+                        $('#public-link-survey').attr('pre-token', token);
+                        $('.show-public-link').removeClass('hidden');
+                    },
+                    error: function (data) {
+                        $('#token-link-messages').removeClass('hidden');
+                        $('#token-link-messages').text(data.responseJSON['token'][0]);
+                    }
+                });
+            }
+        }
+    });
+
+    var surveyId = $('.deadline-survey').attr('data-survey');
+    var url = $('.deadline-survey').attr('data-url');
+
+    $.ajax({
+        type: 'POST',
+        url: url,
+        dataType: 'json',
+        data: {
+            survey_id: surveyId,
+        },
+        success: function (data) {
+            if (data) {
+                var clock = $('.countdown-deadline-survey').FlipClock(data, {
+                    clockFace: 'DailyCounter',
+                    countdown: true,
+                });
+            } else {
+                $('.deadline-survey').addClass('hidden');
+            }
+        }
+    });
+
+    $('.bootstrap-tagsinput input[type=text]').bind('click keyup', function(e) {
+        var url = $('#invitation-email').data('url');
+        var keyword = $(this).val();
+        var emails = $('input:text[name=emails]').tagsinput('items');
+
+        $.ajax({
+            type:'POST',
+            url: url,
+            dataType: 'json',
+            data: {
+                keyword: keyword,
+                emails: emails,
+            },
+            success: function (users) {
+                $('.box-suggestion-email').removeClass('hidden');
+                $('.box-suggestion-email').empty();
+
+                users.data.forEach(user => {
+                    $('.box-suggestion-email').append(`
+                        <li class="email-suggest-item"><i class="fa fa-envelope"></i> ${user.email}</li>
+                    `)
+                });
+
+                $('.email-suggest-item').on('mouseover', function () {
+                    $('.bootstrap-tagsinput input[type=text]').focus().val($(this).text().trim());
+                });
+
+                $('.email-suggest-item').on('mouseout', function () {
+                    $('.bootstrap-tagsinput input[type=text]').val('').focus();
+                });
+
+                $(document).click(function () {
+                    $('.box-suggestion-email').addClass('hidden');
+                });
+            }
+        })
     });
 });

@@ -51,8 +51,8 @@ class SendMail implements ShouldQueue
 
         $email = $this->inputs['email'];
         Mail::send($view, $data->toArray(), function ($message) use ($email, $subject) {
-           $message->from(config('mail.from.address') , trans('survey.title_web'));
-           $message->to($email)->subject($subject);
-       });
+            $message->from(config('mail.from.address'), trans('survey.title_web'));
+            $message->to($email)->subject($subject);
+        });
     }
 }

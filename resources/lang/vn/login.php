@@ -22,4 +22,5 @@ return [
     'enter_email_password' => 'Nhập email và mật khẩu của bạn',
     'login' => 'Đăng nhập',
     'logout' => ' Thoát ',
+    'require_login_wsm' => 'Bạn phải đăng nhập bằng WSM để tiếp tục với cuộc khảo sát này.'
 ];

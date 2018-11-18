@@ -712,11 +712,13 @@ ul.floated li#age {
   margin-right: 55px;
 }
 
-ul.data-list-2 li {
-  height: 42px;
-  margin-bottom: 15px;
-  width: 100%;
-  display: block;
+ul.data-list-2 {
+  margin-bottom: 0;
+  li {
+    height: 100%;
+    width: 100%;
+    display: block;
+  }
 }
 
 ul.data-list-2 li label {

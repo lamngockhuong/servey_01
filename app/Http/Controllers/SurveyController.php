@@ -8,6 +8,7 @@ use App\Repositories\Survey\SurveyInterface;
 use App\Repositories\Question\QuestionInterface;
 use App\Repositories\Invite\InviteInterface;
 use App\Repositories\Setting\SettingInterface;
+use App\Repositories\User\UserInterface;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use App\Jobs\SendMail;
 use Carbon\Carbon;
@@ -19,6 +20,7 @@ use Exception;
 use Session;
 use App\Models\Survey;
 use App\Http\Requests\UpdateSurveyRequest;
+use Predis\Connection\ConnectionException;
 
 class SurveyController extends Controller
 {
@@ -28,17 +30,20 @@ class SurveyController extends Controller
     protected $questionRepository;
     protected $inviteRepository;
     protected $settingRepository;
+    protected $userRepository;
 
     public function __construct(
         SurveyInterface $surveyRepository,
         QuestionInterface $questionRepository,
         InviteInterface $inviteRepository,
-        SettingInterface $settingRepository
+        SettingInterface $settingRepository,
+        UserInterface $userRepository
     ) {
         $this->surveyRepository = $surveyRepository;
         $this->questionRepository = $questionRepository;
         $this->inviteRepository = $inviteRepository;
         $this->settingRepository = $settingRepository;
+        $this->userRepository = $userRepository;
     }
 
     public function index()
@@ -75,7 +80,7 @@ class SurveyController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(config('settings.paginate'));
         $surveys = $surveys
-            ->where('status', config('survey.status.avaiable'))
+            ->where('status', config('survey.status.available'))
             ->whereNotIn('id', $settings)
             ->where(function ($query) {
                 return $query->where('deadline', '>', Carbon::now()->toDateTimeString())->orWhereNull('deadline');
@@ -138,29 +143,108 @@ class SurveyController extends Controller
 
         $surveyId = $request->get('idSurvey');
         $this->surveyRepository->delete($surveyId);
-        $redis = LRedis::connection();
-        $redis->publish('delete', json_encode([
-            'success' => true,
-            'surveyId' => $surveyId,
-        ]));
+
+        try {
+            $redis = LRedis::connection();
+            $redis->publish('delete', json_encode([
+                'success' => true,
+                'surveyId' => $surveyId,
+            ]));
+        } catch (ConnectionException $e) {
+        }
 
         return [
             'success' => true,
         ];
     }
 
+    public function open($id, Request $request)
+    {
+        if ($request->ajax()) {
+            try {
+                $survey = $this->surveyRepository->find($id);
+                $changeDeadline = $request->get('change_deadline') === 'true' ? true: false;
+
+                if ($changeDeadline && !empty($request->get('deadline'))) {
+                    $deadline = Carbon::parse(in_array(Session::get('locale'), config('settings.sameFormatDateTime'))
+                        ? str_replace('-', '/', $request->get('deadline'))
+                        : $request->get('deadline'))
+                        ->toDateTimeString();
+                    $this->surveyRepository->update($id, ['status' => config('survey.status.available'), 'deadline' => $deadline]);
+                } else {
+                    $this->surveyRepository->update($id, ['status' => config('survey.status.available')]);
+                }
+
+                $redis = LRedis::connection();
+                $redis->publish('open', $id);
+            } catch (ConnectionException $e) {
+            } catch (Exception $e) {
+                return [
+                    'success' => false,
+                    'message' => trans('home.error'),
+                ];
+            }
+
+            return [
+                'success' => true,
+            ];
+        }
+    }
+
     public function close($id, Request $request)
     {
         if ($request->ajax()) {
             try {
+                $survey = $this->surveyRepository->find($id);
+
+                if ($survey->is_expired) {
+                    throw new Exception();
+                }
+
                 $this->surveyRepository->update($id, ['status' => config('survey.status.block')]);
                 $redis = LRedis::connection();
                 $redis->publish('close', $id);
-
-                return response()->json(trans('temp.closed'));
-            } catch (\Exception $e) {
-                return response()->json(trans('home.error'), 400);
+            } catch (ConnectionException $e) {
+            } catch (Exception $e) {
+                return [
+                    'success' => false,
+                    'message' => trans('home.error'),
+                ];
             }
+
+            return [
+                'success' => true,
+            ];
+        }
+    }
+
+    public function duplicate($id, Request $request)
+    {
+        if ($request->ajax()) {
+            DB::beginTransaction();
+
+            try {
+                $survey = $this->surveyRepository->find($id);
+                $newSurvey = $this->surveyRepository->duplicateSurvey($survey);
+                DB::commit();
+
+                $redis = LRedis::connection();
+                $redis->publish('duplicate', $id);
+            } catch (ConnectionException $e) {
+            } catch (Exception $e) {
+                DB::rollback();
+
+                return [
+                    'success' => false,
+                    'message' => trans('home.error'),
+                ];
+            }
+
+            Session::flash('message', trans('messages.duplicate_successfully'));
+            return [
+                'success' => true,
+                'url' => action('AnswerController@show', ['token' => $newSurvey->token_manage]),
+            ];
         }
     }
 
@@ -179,13 +263,26 @@ class SurveyController extends Controller
     {
         try {
             $survey = $this->surveyRepository->find($id);
+
+            if ($survey->status == config('survey.status.available')) {
+                throw new Exception('Can not update the survey information when status is available');
+            }
+
             $isSuccess = false;
             $data = $request->only([
                 'title',
                 'description',
             ]);
 
+            $data['start_time'] = null;
             $data['deadline'] = null;
+
+            if ($request->get('start_time')) {
+                $data['start_time'] = Carbon::parse(in_array(Session::get('locale'), config('settings.sameFormatDateTime'))
+                    ? str_replace('-', '/', $request->get('start_time'))
+                    : $request->get('start_time'))
+                    ->toDateTimeString();
+            }
 
             if ($request->get('deadline')) {
                 $data['deadline'] = Carbon::parse(in_array(Session::get('locale'), config('settings.sameFormatDateTime'))
@@ -206,16 +303,15 @@ class SurveyController extends Controller
                 'success' => true,
                 'surveyId' => $id,
             ]));
-
-            return redirect()->action('AnswerController@show', $survey->token_manage)
-                ->with('message', trans_choice('messages.object_updated_successfully', 1));
+        } catch (ConnectionException $e) {
         } catch (Exception $e) {
             DB::rollback();
-
             return redirect()->action('AnswerController@show', $survey->token_manage)
                 ->with('message-fail', trans_choice('messages.object_updated_unsuccessfully', 1));
         }
 
+        return redirect()->action('AnswerController@show', $survey->token_manage)
+                ->with('message', trans_choice('messages.object_updated_successfully', 1));
     }
 
     public function updateSurveyContent(Request $request, $surveyId, $token)
@@ -315,7 +411,7 @@ class SurveyController extends Controller
             $validator['txt-question.question.' . $questionIndex] = 'required|max:255';
 
             if ($images && array_key_exists('question', $images) && array_key_exists($questionIndex, $images['question'])) {
-                $validator['image.quesion.' . $questionIndex] = 'image|mimes:jpg,jpeg,png,gif,svg|max:1000';
+                $validator['image.quesion.' . $questionIndex] = 'image|mimes:jpg,jpeg,png,gif,bmp,svg|max:1000';
             }
 
             foreach ($inputs['txt-question']['answers'][$questionIndex] as $answerIndex => $answer) {
@@ -325,7 +421,7 @@ class SurveyController extends Controller
                     config('survey.type_checkbox'),
                 ])) {
                     $validator['txt-question.answers.' . $questionIndex] = 'array';
-                    $validator['txt-question.answers.' . $questionIndex . '.*.' . $type] = 'required|max:255|distinct';
+                    $validator['txt-question.answers.' . $questionIndex . '.' . $answerIndex . '.' . $type] = 'required|max:255|distinct';
                 }
 
                 if ($images
@@ -333,7 +429,7 @@ class SurveyController extends Controller
                     && array_key_exists($questionIndex, $images['answers'])
                     && array_key_exists($answerIndex, $images['answers'][$questionIndex])
                 ) {
-                    $validator['image.answers.' . $questionIndex . '.' . $answerIndex] = 'image|mimes:jpg,jpeg,png,gif,svg|max:1000';
+                    $validator['image.answers.' . $questionIndex . '.' . $answerIndex] = 'image|mimes:jpg,jpeg,png,gif,bmp,svg|max:1000';
                 }
             }
         }
@@ -345,7 +441,8 @@ class SurveyController extends Controller
                 |regex:/^([a-zA-Z][a-zA-Z0-9_\.]{2,255}@[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,4}){1,2}[,]{0,1}[,]{0,1}[\s]*)+(?<!,)(?<!\s)$/';
             $validator['title'] = 'required|max:255';
             $realTime = Carbon::now()->addMinutes(30)->format(trans('temp.format_with_trans'));
-            $validator['deadline'] = 'date_format:' . trans('temp.format_with_trans') . '|after:' . $realTime;
+            $validator['start_time'] = 'date_format:' . trans('temp.format_with_trans');
+            $validator['deadline'] = 'date_format:' . trans('temp.format_with_trans') . '|after:start_time|after:' . $realTime;
             $validator['setting.' . config('settings.key.limitAnswer')] = 'numeric
                 |digits_between:1,' . config('settings.max_limit');
             $validator['setting.' . config('settings.key.tailMail')] = 'max:255
@@ -375,6 +472,8 @@ class SurveyController extends Controller
         $value = $request->only([
             'title',
             'feature',
+            'start_time',
+            'next_reminder_time',
             'deadline',
             'description',
             'txt-question',
@@ -396,6 +495,7 @@ class SurveyController extends Controller
 
         if ($validator->fails()) {
             return redirect()->back()
+                ->withInput()
                 ->with('message-fail', trans_choice('messages.object_created_unsuccessfully', 1));
         }
 
@@ -415,6 +515,8 @@ class SurveyController extends Controller
                 'token' => $token,
                 'token_manage' => $tokenManage,
                 'status' => $value['deadline'],
+                'start_time' => $value['start_time'],
+                'next_reminder_time' => $value['next_reminder_time'],
                 'deadline' => $value['deadline'],
                 'description' => $value['description'],
                 'user_name' => $value['name'],
@@ -462,9 +564,9 @@ class SurveyController extends Controller
             DB::rollback();
 
             return redirect()->action('SurveyController@index')
+                ->withInput()
                 ->with('message-fail', trans_choice('messages.object_created_unsuccessfully', 1));
         }
-
     }
 
     public function complete($token)
@@ -501,8 +603,7 @@ class SurveyController extends Controller
         if ($data['emails'] && $surveyId) {
             $survey = $this->surveyRepository->find($surveyId);
             $data['name'] = $survey->user_name;
-            $invite = $this->inviteRepository
-                ->invite(auth()->id(), $data['emails'], $surveyId);
+            $invite = $this->inviteRepository->invite(auth()->id(), $data['emails'], $surveyId);
             $data['feature'] = ($type == config('settings.return.bool')) ? $data['feature'] : $survey->feature;
 
             if ($invite) {
@@ -523,12 +624,15 @@ class SurveyController extends Controller
                     ->onQueue('emails');
                 $this->dispatch($job);
                 $isSuccess = true;
-                $redis = LRedis::connection();
-                $redis->publish('invite', json_encode([
-                    'success' => $isSuccess,
-                    'emails' => replaceEmail($data['emails']),
-                    'viewInvite' => view('user.component.invited-user', compact('survey'))->render(),
-                ]));
+                try {
+                    $redis = LRedis::connection();
+                    $redis->publish('invite', json_encode([
+                        'success' => $isSuccess,
+                        'emails' => replaceEmail($data['emails']),
+                        'viewInvite' => view('user.component.invited-user', compact('survey'))->render(),
+                    ]));
+                } catch (ConnectionException $e) {
+                }
             }
         }
 
@@ -545,5 +649,15 @@ class SurveyController extends Controller
                 ->with('message', trans('survey.invite_success'))
             : redirect()->action('SurveyController@listSurveyUser')
                 ->with('message-fail', trans('survey.invite_fail'));
+    }
+
+    public function getMailSuggestion(Request $request)
+    {  
+        if ($request->ajax()) {
+                $data = $request->only('keyword', 'emails');
+                $users = $this->userRepository->findEmail($data, Auth()->user()->id);
+     
+                return response()->json($users);
+        } 
     }
 }

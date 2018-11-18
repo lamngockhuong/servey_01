@@ -36,7 +36,9 @@ class ExportController extends Controller
                         $sheet->setOrientation('landscape');
                     });
                 })->export('xls');
-            } else {
+            } 
+
+            if ($type == 'pdf') {
                 return PDF::loadView('explore.PDF', compact('survey'))->download($survey->title . '.pdf');
             }
         } catch (Exception $e) {

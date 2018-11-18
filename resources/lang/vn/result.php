@@ -31,4 +31,5 @@ return [
     'answer_changed' => 'Câu trả lời này đã thay đổi -> ',
     'question_deleted' => 'câu hỏi này đã bị xóa.',
     'question_changed' => 'Câu hỏi lời này đã thay đổi -> ',
+    'not_open' => 'Survey chưa bắt đầu trả lời ',
 ];

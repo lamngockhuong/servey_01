@@ -14,23 +14,9 @@ use Carbon\Carbon;
 
 class InviteRepository extends BaseRepository implements InviteInterface
 {
-    protected $answerRepository;
-    protected $resultRepository;
-    protected $questionRepository;
-    protected $userRepository;
-
-    public function __construct(
-        Invite $invite,
-        AnswerInterface $answerRepository,
-        ResultInterface $resultRepository,
-        QuestionInterface $questionRepository,
-        UserInterface $userRepository
-    ) {
+    public function __construct(Invite $invite)
+    {
         parent::__construct($invite);
-        $this->answerRepository = $answerRepository;
-        $this->resultRepository = $resultRepository;
-        $this->questionRepository = $questionRepository;
-        $this->userRepository = $userRepository;
     }
 
     public function deleteBySurveyId($surveyId)
@@ -47,15 +33,15 @@ class InviteRepository extends BaseRepository implements InviteInterface
             $invite = $this->whereIn('id', $ids)->get();
             $senderId = $invite->recevier_id;
             $surveyId = $invite->survey_id;
-            $questions = $this->questionRepository
+            $questions = app(QuestionInterface::class)
                 ->where('survey_id', $surveyId)
                 ->lists('id')
                 ->toArray();
-            $answerIds = $this->answerRepository
+            $answerIds = app(AnswerInterface::class)
                 ->whereIn('question_id', $questions)
                 ->lists('id')
                 ->toArray();
-            $this->resultRepository
+            app(ResultInterface::class)
                 ->where('sender_id', $senderId)
                 ->whereIn('answer_id', $answerIds)
                 ->delete();
@@ -73,22 +59,22 @@ class InviteRepository extends BaseRepository implements InviteInterface
     public function getResult($surveyId)
     {
         $charts = [];
-        $charts['questions'] = $questions = $this->questionRepository
+        $charts['questions'] = $questions = app(QuestionInterface::class)
             ->where('survey_id', $surveyId)
             ->whereNotIn('update', [
                 config('survey.update.change'),
                 config('survey.update.delete'),
             ])
             ->get();
-        $charts['answers'] = $answers = $this->answerRepository
+        $charts['answers'] = $answers = app(AnswerInterface::class)
             ->whereIn('question_id', $questions->pluck('id')->toArray())
             ->whereNotIn('update', [
                 config('survey.update.change'),
                 config('survey.update.delete'),
             ])
             ->get();
-        $charts['results'] = $results = $this->resultRepository
-            ->whereIn('answer_id',$answers->pluck('id')->toArray())
+        $charts['results'] = $results = app(ResultInterface::class)
+            ->whereIn('answer_id', $answers->pluck('id')->toArray())
             ->get();
 
         return $charts;
@@ -98,7 +84,7 @@ class InviteRepository extends BaseRepository implements InviteInterface
     {
         DB::beginTransaction();
         try {
-            $usersAvailable = $this->userRepository->whereIn('email', $recevier)->lists('email', 'id');
+            $usersAvailable = app(UserInterface::class)->whereIn('email', $recevier)->lists('email', 'id');
             $inputsAvailable = [];
 
             foreach ($usersAvailable as $id => $email) {

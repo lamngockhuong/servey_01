@@ -1,5 +1,5 @@
 <div>
-    @if ($surveys)
+    @if (!$surveys->isEmpty())
         <table class="table-list-survey table table-hover table-result-user table-bordered">
             <thead>
                 <tr>
@@ -57,7 +57,7 @@
                                 @else
                                     <td>{{ trans('survey.private') }}</td>
                                 @endif
-                            <td class="margin-center">
+                            <td class="text-center">
                                 <a href="{{ action('AnswerController@show', [
                                     'token' => $survey->token_manage,
                                     'type' => $survey->feature,
@@ -68,7 +68,7 @@
                 @endforeach
             </tbody>
         </table>
-        {{ $surveys->links() }}
+        {{ $surveys->links('pagination.default') }}
     @else
         <div class="alert alert-warning">
             {{ trans('messages.not_have_results') }}

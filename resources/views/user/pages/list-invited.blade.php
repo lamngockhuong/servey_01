@@ -68,5 +68,5 @@
             </div>
         @endforelse
     </table>
-    {{ $invites->links() }}
+    {{ $invites->links('pagination.default') }}
 </div>

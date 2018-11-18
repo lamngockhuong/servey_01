@@ -22,4 +22,5 @@ return [
     'enter_email_password' => 'Enter your email and password',
     'login' => 'Login',
     'logout' => 'Logout',
+    'require_login_wsm' => 'You must sign in with WSM to continue with this Survey.'
 ];

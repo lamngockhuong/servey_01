@@ -6,8 +6,8 @@ $(document).ready(function() {
     var arrayAnswer = [];
     var arrayImageAnswer = [];
     var arrayImageQuestion = [];
-    var maxFileSize = 2048;
-    var maxTotalSize = 8192;
+    var maxFileSize = 1000;
+    var maxTotalSize = 8000;
     var slts = { // selectors
         msg: '.modal-message',
         preview: '.img-pre-option',
@@ -51,6 +51,20 @@ $(document).ready(function() {
 
     (function() {
         elasticArea();
+
+        $('.container-add-question').off('focus').on('focus', '.js-elasticArea', function () {
+            var elasticElement = $(this).get(0),
+                $elasticElement = $(this),
+                initialHeight = 0,
+                delta = parseInt($elasticElement.css('paddingBottom')) + parseInt($elasticElement.css('paddingTop')) || 0,
+                resize = function () {
+                    $elasticElement.height(initialHeight);
+                    $elasticElement.height(elasticElement.scrollHeight - delta);
+                };
+
+            $elasticElement.on('input change keyup', resize);
+            resize();
+        });
     })();
 
     function addAnwser($this) {
@@ -59,14 +73,13 @@ $(document).ready(function() {
         var number = parseInt($($this).attr('id-as'));
         var trash = parseInt($('.question' + number).attr('trash'));
         var numberAnswer = (parseInt($('.question' + number).attr('temp-qs')) + 1);
-
+        var otherQuestionTypeId = $this.parent('div').find('span:regex(class, (other))').attr('typeid');
         $.ajax({
             url: url,
             type: 'POST',
             data: {
                 'number': number,
                 'numberAnswer': numberAnswer,
-                'type': type,
             },
             dataType: 'json',
             async: false,
@@ -75,8 +88,15 @@ $(document).ready(function() {
                     $('.temp-other' + number +':first').before(response.data);
                     $('.question' + number).attr('temp-qs', numberAnswer);
                     $('.question' + number).attr('trash', trash + 1);
+                    $('.question' + number)
+                        .find('textarea:regex(name, ^txt-question\\[answers\\]\\[.*\\]\\[.*\\]\\[' + otherQuestionTypeId + '\\])')
+                        .attr('name', 'txt-question[answers][' + number + '][' + (numberAnswer + 1) + '][' + otherQuestionTypeId + '])');
                 } else {
-                    alert(error);
+                    var data = {
+                        message: error,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
             }
         });
@@ -90,15 +110,21 @@ $(document).ready(function() {
             url,
             {
                 'number': number,
-                'type': type,
             },
             function(response) {
                 if (response.success) {
                     var trash = parseInt($('.question' + number).attr('trash'));
                     $('.question' + number).attr('trash', trash + 1);
                     $('.temp-other' + number + ':first').before(response.data);
+                    $('.question' + number)
+                        .find('textarea:regex(name, ^txt-question\\[answers\\]\\[.*\\]\\[.*\\]\\[' + type + '\\])')
+                        .attr('name', 'txt-question[answers][' + number + '][' + trash + '][' + type + '])');
                 } else {
-                    alert(error);
+                    var data = {
+                        message: error,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
         });
         $this.hide();
@@ -126,14 +152,18 @@ $(document).ready(function() {
                     $('.data').attr('data-question', number_qs);
                     $('.div-finish').css('display', 'block');
                 } else {
-                    alert(error);
+                     var data = {
+                         message: error,
+                         buttonText: Lang.get('js.button.ok'),
+                     };
+                     alertDanger(data);
                 }
             }
         });
     }
 
     function checkTypeImage(input) {
-        var fileExtension = ['jpeg', 'jpg', 'png', 'gif', 'bmp'];
+        var fileExtension = ['jpeg', 'jpg', 'png', 'gif', 'bmp', 'svg'];
         var fileName = input.name;
         var fileNameExt = fileName.substr(fileName.lastIndexOf('.') + 1);
 
@@ -450,7 +480,11 @@ $(document).ready(function() {
                     $('.popup-user-answer').css('display', 'block');
                     $('.popup-content-history').append(response.data);
                 } else {
-                    alert(error);
+                    var data = {
+                        message: error,
+                        buttonText: Lang.get('js.button.ok'),
+                    };
+                    alertDanger(data);
                 }
             }
         });
@@ -605,7 +639,11 @@ $(document).ready(function() {
                         $('.append-as' + temp_qs).html(response.data);
                         elasticArea();
                     } else {
-                        alert(error);
+                        var data = {
+                            message: error,
+                            buttonText: Lang.get('js.button.ok'),
+                        };
+                        alertDanger(data);
                     }
             });
         } else {

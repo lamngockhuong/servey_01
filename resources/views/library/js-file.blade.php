@@ -40,22 +40,23 @@
     </script>
 @show
 {{ Html::script(asset('/bower/jquery/dist/jquery.min.js')) }}
-{{ Html::script(asset('/js/app.js')) }}
+{{ Html::script(elixir('/js/app.js')) }}
+{{ Html::script(elixir('/js/messages.js')) }}
 {{ Html::script(asset('/bower/highcharts/highcharts.js')) }}
 {{ Html::script(asset('/bower/highcharts/highcharts-3d.js')) }}
 {{ Html::script(asset('/bower/highcharts/js/modules/exporting.js')) }}
 {{ Html::script(asset('/bower/angularjs/angular.min.js')) }}
 {{ Html::script(asset('/bower/typeahead.js/dist/typeahead.bundle.min.js')) }}
 {{ Html::script(asset('/bower/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js')) }}
-{{ Html::script(asset('/user/js/step-wizard.js')) }}
+{{ Html::script(elixir('/user/js/step-wizard.js')) }}
 {{ Html::script(asset('/bower/jquery-ui/jquery-ui.js')) }}
-{{ Html::script(asset('/user/js/jquery.wizard.js')) }}
-{{ Html::script(asset('/user/js/check.min.js')) }}
-{{ Html::script(asset('/user/js/validate.js')) }}
+{{ Html::script(elixir('/user/js/jquery.wizard.js')) }}
+{{ Html::script(elixir('/user/js/check.min.js')) }}
+{{ Html::script(elixir('/user/js/validate.js')) }}
 {{ Html::script(asset('/bower/jquery.placeholder/jquery.placeholder.js')) }}
-{{ Html::script(asset('/user/js/jquery.bxslider.min.js')) }}
-{{ Html::script(asset('/bower/owlcarousel/dist/owl.carousel.min.js')) }}
-{{ Html::script(asset('/user/js/functions.js')) }}
+{{ Html::script(elixir('/user/js/jquery.bxslider.min.js')) }}
+{{ Html::script(asset('/bower/owl.carousel/dist/owl.carousel.min.js')) }}
+{{ Html::script(elixir('/user/js/functions.js')) }}
 {{ Html::script(asset('/bower/socket.io-client/dist/socket.io.js')) }}
 {{ Html::script(asset('/bower/fancyBox/source/jquery.fancybox.pack.js')) }}
 {{ Html::script(asset('/bower/fancyBox/source/helpers/jquery.fancybox-media.js')) }}
@@ -63,6 +64,9 @@
 {{ Html::script(asset('/bower/bootstrap/dist/js/bootstrap.min.js')) }}
 {{ Html::script(asset('/bower/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js')) }}
 {{ Html::script(asset('/bower/ms-Dropdown/js/msdropdown/jquery.dd.min.js')) }}
-{{ Html::script(asset('/user/js/question.js')) }}
-{{ Html::script(asset('/user/js/component.js')) }}
-{{ Html::script(asset('/user/js/socket.js')) }}
+{{ Html::script(asset('/bower/bootstrap-sweetalert/dist/sweetalert.min.js')) }}
+{{ Html::script(elixir('/user/js/alert.js')) }}
+{{ Html::script(elixir('/user/js/question.js')) }}
+{{ Html::script(elixir('/user/js/component.js')) }}
+{{ Html::script(elixir('/user/js/socket.js')) }}
+{{ Html::script(elixir('/user/js/flipclock.min.js')) }}

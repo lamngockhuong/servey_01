@@ -27,12 +27,12 @@
                 <div class="row show-message">
                     @if (Session::has('message'))
                         <div class="alert col-md-4 col-md-offset-4 animated fadeInDown alert-info alert-message">
-                            {{ Session::get('message') }}
+                            {!! Session::get('message') !!}
                         </div>
                     @endif
                     @if (Session::has('message-fail'))
                         <div class="alert col-md-4 col-md-offset-4 animated fadeInDown alert-danger alert-message">
-                            {{ Session::get('message-fail') }}
+                            {!! Session::get('message-fail') !!}
                         </div>
                     @endif
                 </div>
@@ -127,12 +127,6 @@
                                                                 </span>
                                                             </div>
                                                             <div class="col-md-1"></div>
-                                                            <div class="export-PDF col-md-4">
-                                                                {!! Html::image(config('settings.image_path_system') . 'pdf.png', '') !!}
-                                                                <span>
-                                                                    {{ trans('survey.exportPDF') }}
-                                                                </span>
-                                                            </div>
                                                         </div>
                                                         {!! Form::open(['action' => [
                                                                 'User\ExportController@export',

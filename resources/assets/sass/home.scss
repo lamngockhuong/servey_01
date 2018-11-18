@@ -798,7 +798,11 @@
     }
 }
 
-.btn-save-survey, .btn-remove-survey, .btn-close-survey {
+.btn-save-survey,
+.btn-remove-survey,
+.btn-open-survey,
+.btn-close-survey,
+.btn-duplicate-survey {
     color: #fdfdfd;
     font-size: 17px;
     box-shadow: 1px 2px 3px rgba(119, 132, 130, 0.56);

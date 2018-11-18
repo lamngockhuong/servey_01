@@ -10,6 +10,7 @@
     "chart": "^0.1.2",
     "chartist": "^0.10.1",
     "gulp": "^3.9.1",
+    "gulp-shell": "^0.6.5",
     "jquery": "^3.1.0",
     "laravel-elixir": "^6.0.0-9",
     "laravel-elixir-browsersync-official": "^1.0.0",
@@ -26,6 +27,7 @@
     "chartist": "^0.10.1",
     "es6-promise": "^4.1.0",
     "express": "^4.15.2",
+    "flipclock": "^0.7.8",
     "lightweight-bootstrap": "0.0.1",
     "redis": "^2.7.1",
     "socket.io": "^1.7.3"

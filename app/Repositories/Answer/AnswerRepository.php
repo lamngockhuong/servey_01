@@ -15,18 +15,17 @@ class AnswerRepository extends BaseRepository implements AnswerInterface
 {
     protected $resultRepository;
 
-    public function __construct(Answer $answer, ResultInterface $result)
+    public function __construct(Answer $answer)
     {
         parent::__construct($answer);
-        $this->resultRepository = $result;
     }
 
     public function deleteByQuestionId($questionIds)
     {
         $ids = is_array($questionIds) ? $questionIds : [$questionIds];
         $answers = $this->whereIn('question_id', $ids)->lists('id')->toArray();
-        $this->resultRepository
-            ->delete($this->resultRepository->whereIn('answer_id', $answers)->lists('id')->toArray());
+        app(ResultInterface::class)
+            ->delete(app(ResultInterface::class)->whereIn('answer_id', $answers)->lists('id')->toArray());
         parent::delete($answers);
     }
 
@@ -35,8 +34,8 @@ class AnswerRepository extends BaseRepository implements AnswerInterface
         DB::beginTransaction();
         try {
             $ids = is_array($ids) ? $ids : [$ids];
-            $this->resultRepository
-                ->delete($this->resultRepository->whereIn('answer_id', $ids)->lists('id')->toArray());
+            app(ResultInterface::class)
+                ->delete(app(ResultInterface::class)->whereIn('answer_id', $ids)->lists('id')->toArray());
             parent::delete($ids);
             DB::commit();
 
@@ -68,28 +67,28 @@ class AnswerRepository extends BaseRepository implements AnswerInterface
         $answerIds = $this->getAnswerIds($questionIds, $isUpdate);
 
         if (!$time) {
-            return $this->resultRepository->whereIn('answer_id', $answerIds);
+            return app(ResultInterface::class)->whereIn('answer_id', $answerIds);
         }
 
         $time = Carbon::parse($time)->format('Y-m-d');
 
-        return $this->resultRepository
+        return app(ResultInterface::class)
             ->whereIn('answer_id', $answerIds)
             ->where('created_at', 'LIKE', "%$time%");
     }
 
     public function deleteResultWhenUpdateAnswer($ids)
     {
-        $this->resultRepository->newQuery(new Result());
-        $results = $this->resultRepository->whereIn('answer_id', is_array($ids) ? $ids : [$ids])->lists('email', 'id')->toArray();
+        app(ResultInterface::class)->newQuery(new Result());
+        $results = app(ResultInterface::class)->whereIn('answer_id', is_array($ids) ? $ids : [$ids])->lists('email', 'id')->toArray();
         $ids = array_keys($results);
         $emails = array_where($results, function($value, $key) {
             if ($value != (string)config('settings.undentified_email')) {
                 return $value;
             }
         });
-        $this->resultRepository->newQuery(new Result());
-        $this->resultRepository->delete($ids);
+        app(ResultInterface::class)->newQuery(new Result());
+        app(ResultInterface::class)->delete($ids);
 
         return $emails;
     }
@@ -193,7 +192,7 @@ class AnswerRepository extends BaseRepository implements AnswerInterface
                         $content = in_array(head(array_keys($answer)), [
                             config('survey.type_other_checkbox'),
                             config('survey.type_other_radio'),
-                        ]) ?  trans('temp.other') : head($answer);
+                        ]) ? trans('temp.other') : head($answer);
                         $dataCreate[] = [
                             'content' => $content,
                             'question_id' => $questionId,

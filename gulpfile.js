@@ -1,5 +1,6 @@
 const elixir = require('laravel-elixir');
 var Promise = require('es6-promise').Promise;
+var shell = require('gulp-shell');
 
 /*
  |--------------------------------------------------------------------------
@@ -12,8 +13,10 @@ var Promise = require('es6-promise').Promise;
  |
  */
 
-elixir(function(mix) {
+gulp.task('langjs', shell.task('php artisan lang:js -c public/js/messages.js'));
 
+elixir(function(mix) {
+   mix.task('langjs');
    mix.sass('new-style.scss', 'public/user/css/new-style.css')
    .sass('style.scss', 'public/user/css/style.css')
    .sass('socialize-bookmarks.scss', 'public/user/css/socialize-bookmarks.css')
@@ -21,7 +24,6 @@ elixir(function(mix) {
    .sass('admin-style-1.scss', 'public/admin/css/admin-style-1.css')
    .sass('admin-pages.scss', 'public/admin/css/admin-pages.css')
    .scripts('app.js')
-   .scripts('chart.js', 'public/admin/js/chart.js')
    .scripts('socket.js', 'public/user/js/socket.js')
    .scripts('question.js', 'public/user/js/question.js')
    .scripts('functions.js', 'public/user/js/functions.js')
@@ -30,6 +32,7 @@ elixir(function(mix) {
    .scripts('validate.js', 'public/user/js/validate.js')
    .scripts('jquery.wizard.js', 'public/user/js/jquery.wizard.js')
    .scripts('component.js', 'public/user/js/component.js')
+   .scripts('alert.js', 'public/user/js/alert.js')
    .scripts('step-wizard.js', 'public/user/js/step-wizard.js')
    .scripts('survey.js', 'public/admin/js/survey.js')
    .scripts('form-request.js', 'public/admin/js/form-request.js')
@@ -46,5 +49,7 @@ elixir(function(mix) {
       'public/bower/bootstrap/dist/js/bootstrap.js',
       'public/bower/jquery/dist/jquery.js'
    ], 'public/admin/js')
+   .copy('node_modules/flipclock/compiled/flipclock.css', 'public/user/css')
+   .copy('node_modules/flipclock/compiled/flipclock.min.js', 'public/user/js')
    .version(['public/user/css/*.css', 'public/user/js/*.js', 'public/js/app.js']);
 });
